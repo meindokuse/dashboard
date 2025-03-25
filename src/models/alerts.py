@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy import ForeignKey, DECIMAL, Boolean, Column, Integer
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.database.database import Base
-
+from src.models.currency import Currency
 
 class CurrencyAlert(Base):
     __tablename__ = "currency_alerts"
