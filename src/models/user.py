@@ -29,7 +29,7 @@ class User(Base):
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="user")
     alerts: Mapped[list["CurrencyAlert"]] = relationship(back_populates="user")
 
-    def to_read_base_model(self) -> UserRead:
+    def to_read_model(self) -> UserRead:
         return UserRead(
             id=self.id,
             username=self.username,

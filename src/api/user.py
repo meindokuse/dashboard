@@ -4,14 +4,18 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends
 from redis.asyncio import Redis
-from src.tasks.auth_tasks import save_session_to_redis
+from sqlalchemy.testing.suite.test_reflection import users
 
+from src.tasks.auth_tasks import save_session_to_redis
 
 from src.api.dependses import UOWDep
 from src.database.cache import get_redis
 from src.schemas.user import UserCreate, UserResponseLogin
 from src.services.user_service import UserService
 from fastapi import Request, Response
+
+from src.utils.get_current_user import session_dep, get_current_user
+
 router = APIRouter(
     tags=['user'],
     prefix='/user',
@@ -33,7 +37,6 @@ async def login(
         response: Response,
         response_login: UserResponseLogin,
         uow: UOWDep,
-        redis_client: Redis = Depends(get_redis),
 ):
     user_service = UserService(uow)
     user = await user_service.authenticate(response_login)

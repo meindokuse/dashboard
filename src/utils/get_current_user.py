@@ -1,6 +1,8 @@
 import json
+from typing import Annotated
 
 from fastapi import HTTPException
+from fastapi.params import Depends
 from redis.asyncio import Redis
 from starlette.requests import Request
 
@@ -20,3 +22,5 @@ async def get_current_user(request: Request, redis_client: Redis):
         raise HTTPException(401, "IP changed. Please relogin.")
 
     return data["user_id"]
+
+session_dep = Annotated[int,Depends(get_current_user)]
