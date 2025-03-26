@@ -27,7 +27,7 @@ class UserRead(BaseModel):
     notification_channel: Optional[str] = None
 
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
     telegram_id: Optional[str] = None
