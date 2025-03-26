@@ -1,4 +1,4 @@
-.env
+dashboard_backend/.env
 .gitignore
 .idea
 .venv
