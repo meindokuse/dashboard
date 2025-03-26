@@ -1,0 +1,6 @@
+fastapi
+alembic
+asyncpg
+sqlalchemy
+bcrypt
+dotenv
