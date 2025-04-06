@@ -1,0 +1,6 @@
+dashboard_backend/.env
+.gitignore
+.idea
+.venv
+alembic.ini
+alembic/
