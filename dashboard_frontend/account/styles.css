@@ -1,0 +1,86 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: #333;
+}
+
+.profile-container {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 350px;
+    padding: 30px;
+    text-align: center;
+}
+
+.profile-header {
+    margin-bottom: 25px;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #4a6bff;
+    margin: 0 auto 15px;
+}
+
+.profile-nickname {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+    color: #2c3e50;
+}
+
+.profile-balance {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.balance-label {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 5px;
+}
+
+.balance-amount {
+    font-size: 28px;
+    font-weight: bold;
+    color: #27ae60;
+}
+
+.profile-actions {
+    margin-top: 25px;
+}
+
+.btn {
+    background-color: #4a6bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #3a5bed;
+}
+
+.edit-avatar {
+    display: block;
+    margin-top: 15px;
+    color: #4a6bff;
+    text-decoration: none;
+    font-size: 13px;
+}
