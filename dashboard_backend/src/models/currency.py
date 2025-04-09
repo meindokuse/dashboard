@@ -6,6 +6,9 @@ from src.database.database import Base
 from sqlalchemy import String, Boolean, Column, Integer, Text, DECIMAL, ForeignKey, TIMESTAMP
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
+from src.schemas.currency import CurrencyRead
+from src.schemas.rate import ExchangeRateRead
+
 
 class Currency(Base):
     __tablename__ = "currencies"
@@ -22,6 +25,15 @@ class Currency(Base):
     alerts = relationship("CurrencyAlert", back_populates="currency")
 
 
+    def to_read_model(self) -> CurrencyRead:
+        return CurrencyRead(
+            id=self.id,
+            code=self.code,
+            name=self.name,
+            description=self.description,
+        )
+
+
 class ExchangeRate(Base):
     __tablename__ = "exchange_rates"
 
@@ -32,3 +44,11 @@ class ExchangeRate(Base):
     source: Mapped[str] = mapped_column(String(50))
 
     currency = relationship("Currency", back_populates="exchange_rates")
+
+    def to_read_model(self) -> ExchangeRateRead:
+        return ExchangeRateRead(
+            id=self.id,
+            rate = self.rate,
+            timestamp = self.timestamp,
+            source = self.source
+        )
