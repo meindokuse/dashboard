@@ -42,5 +42,6 @@ class UserService:
 
     async def get_user_by_id(self, id: int):
         async with self.uow:
-            user = await self.uow.user.find_one(id=id)
+            user = await self.uow.user.find_one(id=int(id))
             return user
+

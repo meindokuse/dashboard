@@ -13,6 +13,7 @@ class IUnitOfWork(ABC):
     currency: CurrencyRepository
     rate: RateRepository
 
+
     @abstractmethod
     def __init__(self):
         ...

@@ -9,8 +9,7 @@ from src.database.cache import redis_pool
 @celery_app.task
 def save_session_to_redis(user_id: str, user_ip: str, is_remember: bool, session_id: str):
     # Создаем синхронное подключение к Redis
-    redis = Redis(connection_pool=redis_pool)
-    # Сохраняем сессию
+    redis = Redis(connection_pool=redis_pool)    # Сохраняем сессию
     expire_time = 30 * 86400 if is_remember else 0  # 30 дней или без истечения
     redis.setex(
         f"session:{session_id}",

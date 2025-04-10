@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from locale import currency
 from typing import Optional
 
 from src.database.database import Base
@@ -24,7 +25,6 @@ class Currency(Base):
     transactions = relationship("Transaction", back_populates="currency")
     alerts = relationship("CurrencyAlert", back_populates="currency")
 
-
     def to_read_model(self) -> CurrencyRead:
         return CurrencyRead(
             id=self.id,
@@ -48,7 +48,8 @@ class ExchangeRate(Base):
     def to_read_model(self) -> ExchangeRateRead:
         return ExchangeRateRead(
             id=self.id,
-            rate = self.rate,
-            timestamp = self.timestamp,
-            source = self.source
+            currency_id=self.currency_id,
+            rate=self.rate,
+            timestamp=self.timestamp,
+            source=self.source
         )

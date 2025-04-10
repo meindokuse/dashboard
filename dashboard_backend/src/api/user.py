@@ -13,6 +13,7 @@ from src.schemas.user import UserCreate, UserResponseLogin
 from src.services.user_service import UserService
 from fastapi import Request, Response
 
+from src.utils.get_current_user import session_dep
 
 router = APIRouter(
     tags=['user'],
@@ -62,4 +63,12 @@ async def login(
 
     return {
         'user': user
+
     }
+
+@router.post('/profile')
+async def get_user_profile(user_id: session_dep,uow:UOWDep):
+    user_service = UserService(uow)
+    user = await user_service.get_user_by_id(user_id)
+    return {"user": user}
+
