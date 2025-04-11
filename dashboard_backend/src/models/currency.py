@@ -36,7 +36,6 @@ class Currency(Base):
 
 class ExchangeRate(Base):
     __tablename__ = "exchange_rates"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     currency_id: Mapped[int] = mapped_column(ForeignKey("currencies.id"))
     rate: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))
