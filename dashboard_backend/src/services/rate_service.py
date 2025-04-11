@@ -24,6 +24,7 @@ class RateService:
         async with self.uow:
             data = new_rate.model_dump()
             id = await self.uow.rate.add_one(data)
+            await self.uow.commit()
             return id
 
 
