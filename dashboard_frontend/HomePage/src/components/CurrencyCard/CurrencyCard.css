@@ -1,0 +1,49 @@
+.currency-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    padding: 20px;
+    transition: transform 0.2s;
+    text-decoration: none;
+    color: white;
+  }
+  
+  .currency-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .card-header img {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .card-header h3 {
+    font-size: 18px;
+    margin-right: auto;
+  }
+  
+  .card-header span {
+    color: #888;
+    font-size: 14px;
+  }
+  
+  .card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .positive {
+    color: #4caf50;
+  }
+  
+  .negative {
+    color: #f44336;
+  }
