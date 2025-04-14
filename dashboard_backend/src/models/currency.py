@@ -1,10 +1,14 @@
 from datetime import datetime
 from decimal import Decimal
+from locale import currency
 from typing import Optional
 
 from src.database.database import Base
 from sqlalchemy import String, Boolean, Column, Integer, Text, DECIMAL, ForeignKey, TIMESTAMP
 from sqlalchemy.orm import relationship, Mapped, mapped_column
+
+from src.schemas.currency import CurrencyRead
+from src.schemas.rate import ExchangeRateRead
 
 
 class Currency(Base):
@@ -21,10 +25,17 @@ class Currency(Base):
     transactions = relationship("Transaction", back_populates="currency")
     alerts = relationship("CurrencyAlert", back_populates="currency")
 
+    def to_read_model(self) -> CurrencyRead:
+        return CurrencyRead(
+            id=self.id,
+            code=self.code,
+            name=self.name,
+            description=self.description,
+        )
+
 
 class ExchangeRate(Base):
     __tablename__ = "exchange_rates"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     currency_id: Mapped[int] = mapped_column(ForeignKey("currencies.id"))
     rate: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))
@@ -32,3 +43,12 @@ class ExchangeRate(Base):
     source: Mapped[str] = mapped_column(String(50))
 
     currency = relationship("Currency", back_populates="exchange_rates")
+
+    def to_read_model(self) -> ExchangeRateRead:
+        return ExchangeRateRead(
+            id=self.id,
+            currency_id=self.currency_id,
+            rate=self.rate,
+            timestamp=self.timestamp,
+            source=self.source
+        )

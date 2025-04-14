@@ -1,7 +1,10 @@
-from redis.asyncio import Redis
+from redis import ConnectionPool
+
+redis_pool = ConnectionPool(
+    host='localhost',
+    port=6379,
+    db=0,
+    decode_responses=True
+)
 
 
-async def get_redis() -> Redis:
-    redis_client = Redis(host='localhost', port=6379, db=0, decode_responses=True)
-    yield redis_client
-    await redis_client.close()

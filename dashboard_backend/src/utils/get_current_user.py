@@ -1,26 +1,31 @@
+import redis  # Импорт модуля целиком для явности
 import json
 from typing import Annotated
-
-from fastapi import HTTPException
-from fastapi.params import Depends
-from redis.asyncio import Redis
+from fastapi import HTTPException, Depends
+from redis import Redis
 from starlette.requests import Request
 
+from src.database.cache import redis_pool
 
-async def get_current_user(request: Request, redis_client: Redis):
+
+def get_current_user(request: Request):
+
+    redis = Redis(connection_pool=redis_pool)    # Сохраняем сессию
+
     session_id = request.cookies.get("session_id")
     if not session_id:
-        raise HTTPException(401, "Not authenticated")
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
-    session_data = await redis_client.get(f"session:{session_id}")
+    session_data = redis.get(f"session:{session_id}")
+
     if not session_data:
-        raise HTTPException(401, "Session expired")
-
+        raise HTTPException(status_code=401, detail="Session expired")
+    print(session_data)
     data = json.loads(session_data)
-    if data["ip"] != request.client.host:  # Если IP изменился
-        await redis_client.delete(f"session:{session_id}")  # Удаляем сессию
-        raise HTTPException(401, "IP changed. Please relogin.")
+    if data["ip"] != request.client.host:
+        redis.delete(f"session:{session_id}")
+        raise HTTPException(status_code=401, detail="IP changed. Please relogin.")
 
     return data["user_id"]
 
-session_dep = Annotated[int,Depends(get_current_user)]
+session_dep = Annotated[int, Depends(get_current_user)]
