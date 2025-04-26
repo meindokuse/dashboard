@@ -1,0 +1,97 @@
+
+
+.app-container {
+  display: grid;
+  grid-template-columns: 3fr 5fr;
+  flex-grow: 1;
+  padding-top: 20px;
+}
+
+.sidebar {
+  position: fixed;
+  width: 37.5%;
+  height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+  box-sizing: border-box;
+  margin-top: 20px;
+}
+
+.main-content {
+  grid-column: 2;
+  padding: 20px 40px;
+  margin-left: 37.5%;
+  width: 62.5%;
+  box-sizing: border-box;
+}
+
+.loading {
+  padding: 50px;
+  text-align: center;
+  font-size: 1.2rem;
+  color: #e3e3e3;
+}
+
+/* Адаптивность */
+@media (max-width: 1024px) {
+  .app-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 20px;
+    margin-top: 0;
+  }
+  
+  .main-content {
+    grid-column: 1;
+    width: 100%;
+    margin-left: 0;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 15px 5%;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .navbar ul {
+    gap: 20px;
+  }
+  
+  .app-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar, .main-content {
+    width: 100%;
+    padding: 15px;
+  }
+}
+
+/* Дополнительные улучшения */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 33, 71, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
