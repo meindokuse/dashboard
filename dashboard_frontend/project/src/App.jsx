@@ -5,6 +5,7 @@ import Home from './pages/Home/Home'
 import Coin from './pages/Coin/Coin'
 import Auth from './pages/Auth/Auth'
 import Profile from './pages/Profile/Profile'
+import PortfolioCurrencies from './pages/PortfolioCurrencies/PortfolioCurrencies';
 const App = () => {
   return (
     <div className='app'>
@@ -14,6 +15,7 @@ const App = () => {
         <Route path='/coin/:coinId' element={<Coin/>}/>
         <Route path='/auth/' element={<Auth/>}/>
         <Route path='/profile/' element={<Profile/>}/>
+        <Route path="/portfolio/:portfolioId" element={<PortfolioCurrencies />} />
       </Routes>
     </div>
   )

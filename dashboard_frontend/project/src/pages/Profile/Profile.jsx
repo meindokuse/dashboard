@@ -1,6 +1,8 @@
+// Profile.js
 import React, { useEffect, useState } from 'react';
 import UserInfo from '../../components/UserInfo/UserInfo';
 import PortfolioList from '../../components/PortfolioList/PortfolioList';
+import { mockProfileData } from '../../data/mockProfile';
 import './Profile.css';
 
 function Profile() {
@@ -9,32 +11,19 @@ function Profile() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Моковые данные (замените на реальный API-запрос)
+    // Имитация асинхронной загрузки данных
     const fetchData = async () => {
       try {
-        setUserData({
-          username: 'crypto_user',
-          email: 'user@example.com',
-          balance: 10000,
-          telegram_id: '@telegram_user'
-        });
-
-        setPortfolios([
-          {
-            id: 1,
-            name: 'Основной портфель',
-            value: 8500.50,
-            profit: 250.75
-          },
-          {
-            id: 2,
-            name: 'Долгосрочные инвестиции',
-            value: 4200.00,
-            profit: -150.25
-          }
-        ]);
-
-        setLoading(false);
+        // В реальном приложении здесь был бы API-запрос
+        // Например: const response = await fetch('/api/profile');
+        // const data = await response.json();
+        
+        // Используем моковые данные
+        setTimeout(() => {
+          setUserData(mockProfileData.userData);
+          setPortfolios(mockProfileData.portfolios);
+          setLoading(false);
+        }, 500); // Имитация задержки сети
       } catch (error) {
         console.error("Ошибка загрузки данных:", error);
         setLoading(false);
