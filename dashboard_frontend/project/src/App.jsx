@@ -6,8 +6,10 @@ import Coin from './pages/Coin/Coin'
 import Auth from './pages/Auth/Auth'
 import Profile from './pages/Profile/Profile'
 import PortfolioCurrencies from './pages/PortfolioCurrencies/PortfolioCurrencies';
+import { AuthProvider } from "./context/AuthContext";
 const App = () => {
   return (
+    <AuthProvider>
     <div className='app'>
       <Navbar />
       <Routes>
@@ -18,6 +20,7 @@ const App = () => {
         <Route path="/portfolio/:portfolioId" element={<PortfolioCurrencies />} />
       </Routes>
     </div>
+    </AuthProvider>
   )
 }
 

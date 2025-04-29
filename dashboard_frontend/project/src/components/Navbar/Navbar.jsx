@@ -1,13 +1,18 @@
-import React, { useState } from 'react'
-import './Navbar.css'
-import logo from '../../assets/logo.png'
-import arrow_icon from '../../assets/arrow_icon.png'
-import lk from '../../assets/lk.png'
-import { Link } from 'react-router-dom'
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import './Navbar.css';
+import logo from '../../assets/logo.png';
+import lk from '../../assets/lk.png';
 
 const Navbar = () => {
-  // Временное состояние(false - "вход", true - "личный кабинет")
-  const [isLoggedIn, setIsLoggedIn] = useState(true)
+  const { isLoggedIn, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <div className='navbar'>
@@ -20,17 +25,22 @@ const Navbar = () => {
       
       <div className='nav-right'>
         {isLoggedIn ? (
-          <Link to="/profile" className='profile-link'>
-            <button>Личный кабинет <img src={lk} alt='' /></button>
-          </Link>
+          <div className="auth-section">
+            <Link to="/profile" className='profile-link'>
+              <button>Личный кабинет <img src={lk} alt='' /></button>
+            </Link>
+            <button onClick={handleLogout} className='logout-button'>
+              Выйти
+            </button>
+          </div>
         ) : (
           <Link to="/auth" className='login-button'>
-            <button>Вход <img src={arrow_icon} alt='' /></button>
+            <button>Вход</button>
           </Link>
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;

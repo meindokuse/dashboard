@@ -1,11 +1,13 @@
-import React from 'react'
-import { useParams, Link } from 'react-router-dom'
-import './Coin.css'
-
+import React, { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import './Coin.css';
+import LineChart from '../../components/LineChart/LineChart';
 
 const Coin = () => {
-  const { coinId } = useParams()
-
+  const { coinId } = useParams();
+  const [amount, setAmount] = useState('');
+  const [action, setAction] = useState('buy');
+  const [balance] = useState(100000); // Моковый баланс
 
   const coinData = {
     bitcoin: {
@@ -28,11 +30,26 @@ const Coin = () => {
       total_volume: 12000000000,
       description: "Платформа для умных контрактов"
     }
-  }
+  };
 
+  const currentCoin = coinData[coinId];
 
-  const currentCoin = coinData[coinId]
+  const handleTrade = (e) => {
+    e.preventDefault();
+    const numericAmount = parseFloat(amount);
+    
+    if (!numericAmount || numericAmount <= 0) {
+      alert('Введите корректную сумму');
+      return;
+    }
 
+    const total = action === 'buy' 
+      ? numericAmount / currentCoin.current_price
+      : numericAmount * currentCoin.current_price;
+
+    alert(`${action === 'buy' ? 'Покупка' : 'Продажа'} успешна!\nПолучено: ${total.toFixed(6)} ${currentCoin.symbol}`);
+    setAmount('');
+  };
 
   if (!currentCoin) {
     return (
@@ -40,7 +57,7 @@ const Coin = () => {
         <Link to="/" className="back-button">← Назад к списку</Link>
         <h2>Криптовалюта не найдена</h2>
       </div>
-    )
+    );
   }
 
   return (
@@ -69,14 +86,57 @@ const Coin = () => {
           <span>${currentCoin.total_volume.toLocaleString()}</span>
         </div>
       </div>
-      <div className='coin-chart'>
+
+      <div className="trading-section">
+        <h3>Торговая панель</h3>
+        <div className="action-switcher">
+          <button
+            className={`trade-btn ${action === 'buy' ? 'active' : ''}`}
+            onClick={() => setAction('buy')}
+          >
+            Купить
+          </button>
+          <button
+            className={`trade-btn ${action === 'sell' ? 'active' : ''}`}
+            onClick={() => setAction('sell')}
+          >
+            Продать
+          </button>
+        </div>
+
+        <form onSubmit={handleTrade} className="trade-form">
+          <div className="balance-info">
+            Доступно: ${balance.toLocaleString()}
+          </div>
+
+          <div className="input-group">
+            <label>
+              Сумма ({action === 'buy' ? 'USD' : currentCoin.symbol})
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                step="0.000001"
+                placeholder="0.00"
+                required
+              />
+            </label>
+          </div>
+
+          <button type="submit" className={`submit-btn ${action}`}>
+            {action === 'buy' ? 'Купить' : 'Продать'} {currentCoin.symbol}
+          </button>
+        </form>
       </div>
+
       <div className="description">
         <h3>Описание</h3>
         <p>{currentCoin.description}</p>
       </div>
-    </div>
-  )
-}
 
-export default Coin
+      <LineChart />
+    </div>
+  );
+};
+
+export default Coin;

@@ -1,4 +1,4 @@
-.currency-card {
+.currency-card1 {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border-radius: 10px;
@@ -9,7 +9,7 @@
     min-width: 250px;
   }
   
-  .currency-card:hover {
+  .currency-card1:hover {
     transform: translateY(-5px);
   }
   

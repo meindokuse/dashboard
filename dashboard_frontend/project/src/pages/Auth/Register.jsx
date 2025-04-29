@@ -1,40 +1,51 @@
 import React, { useState } from "react";
+import { API_CONFIG } from "../../config/config";
+import { useAuth } from "../../context/AuthContext";
 
-export const Register = (props) => {
-    const [email, setEmail] = useState('');
-    const [pass, setPass] = useState('');
-    const [name, setName] = useState('');
-    const [telegram, setTelegram] = useState('');
-    const [notificationHour, setNotificationHour] = useState('');
+export const Register = ({ onFormSwitch }) => {
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+  const [name, setName] = useState('');
+  const [telegram, setTelegram] = useState('');
+  const [notificationHour, setNotificationHour] = useState('');
+  const { register } = useAuth();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await fetch('http://backend-url/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: name,
-                    email,
-                    password: pass,
-                    telegram_id: telegram || null,
-                    notification_time: notificationHour || null,
-                    notification_channel: telegram ? "telegram" : null
-                })
-            });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const notificationTime = notificationHour 
+        ? `${notificationHour.padStart(2, '0')}:00`
+        : null;
 
-            if (!response.ok) throw new Error('Ошибка регистрации');
-            
-            alert('Регистрация успешна!');
-            props.onFormSwitch('login');
-            
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Ошибка регистрации');
-        }
+      const response = await fetch(API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.REGISTER, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: name,
+          email,
+          password: pass,
+          telegram_id: telegram || null,
+          notification_time: notificationTime,
+          notification_channel: telegram ? "telegram" : null
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Ошибка регистрации');
+      }
+
+      alert('Регистрация успешна!');
+      register();
+      onFormSwitch('login');
+      
+    } catch (error) {
+      console.error('Ошибка:', error);
+      alert(error.message);
     }
+  };
 
     return (
         <div className="auth-form-container">
@@ -73,7 +84,7 @@ export const Register = (props) => {
                 
                 <button type='submit' className="default">Зарегистрироваться</button>
             </form>
-            <button className="link-btn" onClick={() => props.onFormSwitch('login')}>
+            <button className="link-btn" onClick={() => onFormSwitch('login')}>
                 Уже имеете Аккаунт? Войдите
             </button>
         </div>

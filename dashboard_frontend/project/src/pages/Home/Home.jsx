@@ -3,7 +3,6 @@ import './Home.css'
 import CurrencyCard from '../../components/CurrencyCard/CurrencyCard'
 import { mockCoins } from '../../data/mockCoins'
 
-
 const Home = () => {
   return (
     <div className='home'>
@@ -18,7 +17,10 @@ const Home = () => {
       
       <div className='currency-grid'>
         {mockCoins.map((coin) => (
-          <CurrencyCard key={coin.id} coin={coin} />
+          <CurrencyCard 
+            key={`${coin.id}-${coin.symbol}`} 
+            coin={coin} 
+          />
         ))}
       </div>
     </div>
