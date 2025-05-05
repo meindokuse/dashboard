@@ -22,7 +22,8 @@ export const Login = ({ onFormSwitch }) => {
           password: pass,
           is_remember: remember
         }),
-        credentials: 'include'
+        credentials: 'include',
+        mode:'cors'
       });
 
       if (!response.ok) {
