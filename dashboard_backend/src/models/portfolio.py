@@ -1,8 +1,8 @@
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey, String, TIMESTAMP, Boolean, Column, Integer, DECIMAL
+from sqlalchemy import ForeignKey, String, TIMESTAMP, Boolean, Column, Integer, DECIMAL, Date
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from datetime import datetime
+from datetime import datetime, date
 
 from src.database.database import Base
 
@@ -13,8 +13,7 @@ class Portfolio(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     name: Mapped[str] = mapped_column(String(100))
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[date] = mapped_column(Date,default=date.today())
 
 
     user = relationship("User", back_populates="portfolios")

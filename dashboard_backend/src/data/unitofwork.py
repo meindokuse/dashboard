@@ -3,7 +3,10 @@ from typing import Type
 
 from src.database.database import async_session_maker
 from src.repositories.currency_repository import CurrencyRepository
+from src.repositories.portfolio_position_repository import PortfolioPositionRepository
+from src.repositories.portfolio_repository import PortfolioRepository
 from src.repositories.rate_repository import RateRepository
+from src.repositories.transaction_repository import TransactionRepository
 from src.repositories.user_repository import UserRepository
 
 
@@ -12,6 +15,9 @@ class IUnitOfWork(ABC):
     user: UserRepository
     currency: CurrencyRepository
     rate: RateRepository
+    portfolio: PortfolioRepository
+    portfolio_position: PortfolioPositionRepository
+    transaction: TransactionRepository
 
 
     @abstractmethod
@@ -44,6 +50,9 @@ class UnitOfWork(IUnitOfWork):
         self.user = UserRepository(self.session)
         self.currency = CurrencyRepository(self.session)
         self.rate = RateRepository(self.session)
+        self.portfolio = PortfolioRepository(self.session)
+        self.portfolio_position = PortfolioPositionRepository(self.session)
+        self.transaction = TransactionRepository(self.session)
         return self  # Возвращаем себя для использования в `async with`
 
     async def __aexit__(self, *args):

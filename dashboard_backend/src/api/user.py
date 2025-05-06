@@ -40,7 +40,7 @@ async def login(
     user_service = UserService(uow)
     user = await user_service.authenticate(response_login)
 
-    if response_login.is_remember:
+    if user and response_login.is_remember:
         session_id = str(uuid.uuid4())
 
         # Запуск в фоне без ожидания!
@@ -57,13 +57,12 @@ async def login(
             value=session_id,
             httponly=True,
             max_age=30 * 24 * 3600,
-            secure=False,
-            samesite="lax"
+            secure=False,  # Для локального тестирования через туннель
+            samesite="none"  # Обязательно для кросс-доменных запросов
         )
 
     return {
         'user': user
-
     }
 
 @router.post('/profile')
@@ -71,4 +70,6 @@ async def get_user_profile(user_id: session_dep,uow:UOWDep):
     user_service = UserService(uow)
     user = await user_service.get_user_by_id(user_id)
     return {"user": user}
+
+
 

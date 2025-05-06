@@ -7,7 +7,7 @@ from src.schemas.rate import ExchangeRateRead, ExchangeRateCreate
 
 
 class RateService:
-    def __init__(self,uow:IUnitOfWork):
+    def __init__(self, uow: IUnitOfWork):
         self.uow = uow
 
     async def get_rates_by_currency_and_period(
@@ -20,19 +20,14 @@ class RateService:
             rates = await self.uow.rate.get_rates_by_currency_and_period(currency_id, start_date, end_date)
             return rates
 
-    async def add_rate(self,new_rate:ExchangeRateCreate):
+    async def add_rate(self, new_rate: ExchangeRateCreate):
         async with self.uow:
             data = new_rate.model_dump()
             id = await self.uow.rate.add_one(data)
             await self.uow.commit()
             return id
 
-
-
-
-
-
-
-
-
-
+    async def get_last_rate(self, currency_id: int):
+        async with self.uow:
+            rate = await self.uow.rate.get_last_rate(currency_id)
+            return rate

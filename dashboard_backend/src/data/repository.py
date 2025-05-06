@@ -66,6 +66,13 @@ class SQLAlchemyRepository(AbstractRepository):
             raise
 
     async def edit_one(self, id: int, data: dict) -> int:
+        # Фильтруем данные, удаляя None значения
+        filtered_data = {k: v for k, v in data.items() if v is not None}
+
+        # Если после фильтрации не осталось полей для обновления
+        if not filtered_data:
+            return id  # или можно вызвать исключение
+
         stmt = update(self.model).values(**data).filter_by(id=id).returning(self.model.id)
         res = await self.session.execute(stmt)
         return res.scalar_one()
