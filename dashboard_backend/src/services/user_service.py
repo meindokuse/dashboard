@@ -45,3 +45,10 @@ class UserService:
             user = await self.uow.user.find_one(id=int(id))
             return user
 
+    async def minus_balance(self, user_id: int, amount: float):
+        async with self.uow:
+            user = await self.uow.user.find_one(id = user_id)
+            new_balance = user.balance - amount
+            await self.uow.user.update_balance(id = user_id,new_balance=new_balance)
+
+

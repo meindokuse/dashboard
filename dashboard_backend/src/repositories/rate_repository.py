@@ -31,4 +31,15 @@ class RateRepository(SQLAlchemyRepository):
         res_ready = [row[0].to_read_model() for row in res.all()]
 
         return res_ready
+    async def get_last_rate(self,currency_id: int):
+        stmt = (
+            select(self.model)
+            .filter_by(currency_id=currency_id)
+            .order_by(self.model.timestamp.asc())
+            .offset(1)
+            .limit(1)
+        )
+        res = await self.session.execute(stmt)
+        res_ready = res.scalar_one_or_none()
+        return res_ready.to_read_model()
 
