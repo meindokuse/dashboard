@@ -1,9 +1,30 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import './Home.css'
 import CurrencyCard from '../../components/CurrencyCard/CurrencyCard'
-import { mockCoins } from '../../data/mockCoins'
+import { API_CONFIG } from '../../config/config'
 
 const Home = () => {
+  const [currencies, setCurrencies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCurrencies = async () => {
+      try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/currencies/currencies/`);
+        const data = await response.json();
+        setCurrencies(data);
+      } catch (err) {
+        console.error('Ошибка загрузки валют:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrencies();
+  }, []);
+
+  if (loading) return <div>Загрузка...</div>;
+
   return (
     <div className='home'>
       <div className='hero'>
@@ -14,12 +35,15 @@ const Home = () => {
           <button type='submit'>Искать</button>
         </form>
       </div>
-      
       <div className='currency-grid'>
-        {mockCoins.map((coin) => (
+        {currencies.map((currency) => (
           <CurrencyCard 
-            key={`${coin.id}-${coin.symbol}`} 
-            coin={coin} 
+            key={currency.id}
+            coin={{ 
+              id: currency.id,
+              name: currency.name,
+              symbol: currency.code,
+            }} 
           />
         ))}
       </div>

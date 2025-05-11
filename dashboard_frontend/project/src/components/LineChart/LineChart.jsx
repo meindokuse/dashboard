@@ -1,42 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Chart } from "react-google-charts";
 import "./LineChart.css";
+import { API_CONFIG } from '../../config/config';
+import { useParams } from "react-router-dom";
 
 const COLOR_SCHEMES = {
   default: ['#3366cc', '#dc3912', '#ff9900'],
   colorblind: ['#000000', '#E69F00', '#56B4E9']
-};
-
-
-const STATIC_DATA = {
-  '1h': [
-    ['Время', 'Цена', 'Среднее', 'Медиана'],
-    ['12:00', 49000, 49500, 49200],
-    ['13:00', 49500, 49500, 49200],
-    ['14:00', 50000, 49500, 49200],
-    ['15:00', 50500, 49500, 49200],
-  ],
-  '1d': [
-    ['Время', 'Цена', 'Среднее', 'Медиана'],
-    ['00:00', 48000, 49000, 48500],
-    ['06:00', 49000, 49000, 48500],
-    ['12:00', 49500, 49000, 48500],
-    ['18:00', 50000, 49000, 48500],
-  ],
-  '1m': [
-    ['Дата', 'Цена', 'Среднее', 'Медиана'],
-    ['1', 47000, 48000, 47500],
-    ['7', 48000, 48000, 47500],
-    ['15', 48500, 48000, 47500],
-    ['30', 49000, 48000, 47500],
-  ],
-  '1y': [
-    ['Месяц', 'Цена', 'Среднее', 'Медиана'],
-    ['Янв', 45000, 47000, 46000],
-    ['Апр', 48000, 47000, 46000],
-    ['Июл', 51000, 47000, 46000],
-    ['Окт', 49000, 47000, 46000],
-  ]
 };
 
 const getRangeTitle = (range) => {
@@ -49,9 +19,77 @@ const getRangeTitle = (range) => {
   return titles[range] || range;
 };
 
+const calculateDateRange = (range) => {
+  const now = new Date();
+  const ranges = {
+    '1h': () => new Date(now.getTime() - 60 * 60 * 1000),
+    '1d': () => new Date(now.getTime() - 24 * 60 * 60 * 1000),
+    '1m': () => new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()),
+    '1y': () => new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+  };
+  return { start: ranges[range](), end: now };
+};
+
+const processData = (apiData, stats) => {
+  const header = ['Время', 'Цена', 'Среднее', 'Медиана'];
+  const data = [header];
+  
+  apiData.forEach(item => {
+    data.push([
+      item.timestamp,
+      item.rate,
+      stats.mean,
+      stats.median
+    ]);
+  });
+  
+  return data;
+};
+
 export default function LineChart() {
+  const { coinId } = useParams();
   const [timeRange, setTimeRange] = useState('1h');
   const [colorScheme, setColorScheme] = useState('default');
+  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const { start, end } = calculateDateRange(timeRange);
+        
+        const url = new URL(
+          API_CONFIG.ENDPOINTS.CURRENCY_RATES(coinId), 
+          API_CONFIG.BASE_URL
+        );
+        
+        url.searchParams.set('start_date', start.toISOString());
+        url.searchParams.set('end_date', end.toISOString());
+    
+        const response = await fetch(url);
+        
+        if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
+
+        const responseData = await response.json();
+        
+        const processedData = processData(
+          responseData.rates,
+          responseData.statistics
+        );
+        
+        setChartData(processedData);
+      } catch (err) {
+        setError(err.message || 'Ошибка загрузки данных');
+        setChartData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [timeRange, coinId]);
 
   const options = {
     title: `Динамика цены за ${getRangeTitle(timeRange)}`,
@@ -91,15 +129,18 @@ export default function LineChart() {
         </select>
       </div>
 
-      <Chart
-        chartType="LineChart"
-        width="100%"
-        height="500px"
-        data={STATIC_DATA[timeRange]}
-        options={options}
-      />
-
-
+      {loading && <div className="loading">Загрузка...</div>}
+      {error && <div className="error">{error}</div>}
+      
+      {!loading && !error && chartData.length > 0 && (
+        <Chart
+          chartType="LineChart"
+          width="100%"
+          height="500px"
+          data={chartData}
+          options={options}
+        />
+      )}
     </div>
   );
 }

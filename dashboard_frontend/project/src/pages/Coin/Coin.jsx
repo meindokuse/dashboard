@@ -1,40 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './Coin.css';
 import LineChart from '../../components/LineChart/LineChart';
+import { API_CONFIG } from '../../config/config';
 
 const Coin = () => {
-  const { coinId } = useParams();
+  const { coinId } = useParams(); // coinId теперь равен currency.code (например, "BTC")
   const [amount, setAmount] = useState('');
   const [action, setAction] = useState('buy');
-  const [balance] = useState(100000); // Моковый баланс
+  const [currencyData, setCurrencyData] = useState(null);
+  const [currentRate, setCurrentRate] = useState(0);
+  const [balance, setBalance] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const coinData = {
-    bitcoin: {
-      name: "Bitcoin",
-      symbol: "BTC",
-      current_price: 50000,
-      price_change_percentage_24h: 2.5,
-      image: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png",
-      market_cap: 987654321000,
-      total_volume: 123456789000,
-      description: "Первая криптовалюта в мире"
-    },
-    ethereum: {
-      name: "Ethereum",
-      symbol: "ETH",
-      current_price: 3000,
-      price_change_percentage_24h: -1.2,
-      image: "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
-      market_cap: 360000000000,
-      total_volume: 12000000000,
-      description: "Платформа для умных контрактов"
-    }
-  };
+  // Загрузка данных о валюте и балансе пользователя
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 1. Получение информации о валюте
+        const currencyRes = await fetch(`${API_CONFIG.BASE_URL}/currencies/currencies/`);
+        const currencies = await currencyRes.json();
+        const currentCurrency = currencies.find(c => c.code === coinId);
+        if (!currentCurrency) throw new Error('Валюта не найдена');
 
-  const currentCoin = coinData[coinId];
+        // 2. Получение последнего курса
+        const rateRes = await fetch(
+          `${API_CONFIG.BASE_URL}/rate/currencies/${coinId}/rates/?` + 
+          new URLSearchParams({
+            start_date: new Date(Date.now() - 3600 * 1000).toISOString(), // последний час
+            end_date: new Date().toISOString()
+          })
+        );
+        const rateData = await rateRes.json();
+        const latestRate = rateData.rates[0]?.rate || 0;
 
-  const handleTrade = (e) => {
+        // 3. Получение баланса пользователя (пример для авторизованных запросов)
+        const profileRes = await fetch(API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.PROFILE, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const profileData = await profileRes.json();
+
+        setCurrencyData(currentCurrency);
+        setCurrentRate(latestRate);
+        setBalance(profileData.balance);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [coinId]);
+
+  const handleTrade = async (e) => {
     e.preventDefault();
     const numericAmount = parseFloat(amount);
     
@@ -43,48 +63,44 @@ const Coin = () => {
       return;
     }
 
-    const total = action === 'buy' 
-      ? numericAmount / currentCoin.current_price
-      : numericAmount * currentCoin.current_price;
+    try {
+      // Отправка транзакции на бэкенд
+      const response = await fetch(API_CONFIG.BASE_URL + '/transaction/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          currency_id: currencyData.id,
+          type: action.toUpperCase(),
+          amount: numericAmount,
+          rate: currentRate,
+          portfolio_id: 1 // Пример, нужно заменить на реальный portfolio_id
+        })
+      });
 
-    alert(`${action === 'buy' ? 'Покупка' : 'Продажа'} успешна!\nПолучено: ${total.toFixed(6)} ${currentCoin.symbol}`);
-    setAmount('');
+      if (!response.ok) throw new Error('Ошибка транзакции');
+      alert('Транзакция успешно выполнена!');
+      setAmount('');
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
-  if (!currentCoin) {
-    return (
-      <div className="coin-page">
-        <Link to="/" className="back-button">← Назад к списку</Link>
-        <h2>Криптовалюта не найдена</h2>
-      </div>
-    );
-  }
+  if (loading) return <div className="coin-page">Загрузка...</div>;
+  if (error) return <div className="coin-page">Ошибка: {error}</div>;
 
   return (
     <div className="coin-page">
       <Link to="/" className="back-button">← Назад к списку</Link>
       
       <div className="coin-header">
-        <img src={currentCoin.image} alt={currentCoin.name} className="coin-logo" />
-        <h1>{currentCoin.name} ({currentCoin.symbol})</h1>
+        <h1>{currencyData.name} ({currencyData.code})</h1>
       </div>
 
       <div className="price-info">
-        <h2>${currentCoin.current_price.toLocaleString()}</h2>
-        <p className={currentCoin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}>
-          {currentCoin.price_change_percentage_24h}%
-        </p>
-      </div>
-
-      <div className="stats">
-        <div className="stat-item">
-          <span>Капитализация:</span>
-          <span>${currentCoin.market_cap.toLocaleString()}</span>
-        </div>
-        <div className="stat-item">
-          <span>Объем (24ч):</span>
-          <span>${currentCoin.total_volume.toLocaleString()}</span>
-        </div>
+        <h2>${currentRate.toLocaleString()}</h2>
       </div>
 
       <div className="trading-section">
@@ -111,7 +127,7 @@ const Coin = () => {
 
           <div className="input-group">
             <label>
-              Сумма ({action === 'buy' ? 'USD' : currentCoin.symbol})
+              Сумма ({action === 'buy' ? 'USD' : currencyData.code})
               <input
                 type="number"
                 value={amount}
@@ -124,14 +140,14 @@ const Coin = () => {
           </div>
 
           <button type="submit" className={`submit-btn ${action}`}>
-            {action === 'buy' ? 'Купить' : 'Продать'} {currentCoin.symbol}
+            {action === 'buy' ? 'Купить' : 'Продать'} {currencyData.code}
           </button>
         </form>
       </div>
 
       <div className="description">
         <h3>Описание</h3>
-        <p>{currentCoin.description}</p>
+        <p>{currencyData.description}</p>
       </div>
 
       <LineChart />

@@ -4,17 +4,13 @@ import { Link } from 'react-router-dom'
 
 const CurrencyCard = ({ coin }) => {
   return (
-    <Link to={`/coin/${coin.id}`} className='currency-card1'>
+    <Link to={`/coin/${coin.code}`} className='currency-card1'>
       <div className="card-header">
-        <img src={coin.image} alt={coin.name} />
         <h3>{coin.name}</h3>
         <span>{coin.symbol.toUpperCase()}</span>
       </div>
       <div className="card-body">
-        <p>${coin.current_price}</p>
-        <p className={coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}>
-          {coin.price_change_percentage_24h?.toFixed(2)}%
-        </p>
+        <p>Код: {coin.code}</p>
       </div>
     </Link>
   )
