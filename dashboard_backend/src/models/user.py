@@ -3,6 +3,9 @@ from typing import Optional
 from sqlalchemy import String, Boolean, TIMESTAMP, Time, Column, Integer, ForeignKey, DECIMAL
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime, time
+from src.schemas.alerts import AlertPortfolioRead, AlertRead
+from src.schemas.portfolio import PortfolioRead
+from src.schemas.transaction import TransactionRead
 from src.database.database import Base
 from src.models.alerts import CurrencyAlert
 from src.models.portfolio import Portfolio
@@ -25,10 +28,14 @@ class User(Base):
     balance: Mapped[float] = mapped_column(DECIMAL(10,2), nullable=False,default=10000.0)
 
     # Relationships
-    portfolios: Mapped[list["Portfolio"]] = relationship(back_populates="user")
-    transactions: Mapped[list["Transaction"]] = relationship(back_populates="user")
-    alerts: Mapped[list["CurrencyAlert"]] = relationship(back_populates="user")
-
+    portfolios = relationship("Portfolio",back_populates="user")
+    transactions = relationship("Transaction",back_populates="user")
+    alerts = relationship("CurrencyAlert",back_populates="user")
+    portfolio_alerts = relationship(
+        "PortfolioAlert",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
     def to_read_model(self) -> UserRead:
         return UserRead(
             id=self.id,

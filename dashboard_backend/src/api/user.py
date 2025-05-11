@@ -57,7 +57,7 @@ async def login(
             value=session_id,
             httponly=True,
             max_age=30 * 24 * 3600,
-            secure=False,  # Для локального тестирования через туннель
+            secure=True,  # Для локального тестирования через туннель
             samesite="none"  # Обязательно для кросс-доменных запросов
         )
 

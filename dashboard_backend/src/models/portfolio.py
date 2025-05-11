@@ -19,6 +19,7 @@ class Portfolio(Base):
     user = relationship("User", back_populates="portfolios")
     positions = relationship("PortfolioPosition", back_populates="portfolio", cascade="all, delete-orphan")
     transactions = relationship("Transaction", back_populates="portfolio")
+    portfolio_alerts = relationship("PortfolioAlert",back_populates="portfolio")
 
 
 class PortfolioPosition(Base):

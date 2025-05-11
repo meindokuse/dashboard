@@ -20,7 +20,7 @@ app.add_middleware(
         "http://26.93.200.148:5173",  # Фронт в Radmin VPN (если нужно)
     ],
     allow_credentials=True,
-    allow_methods=["POST", "OPTIONS"],
+    allow_methods=["POST", "OPTIONS","GET"],
     allow_headers=["Content-Type"],
     expose_headers=["*"]
 )
