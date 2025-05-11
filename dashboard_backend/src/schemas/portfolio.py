@@ -23,7 +23,9 @@ class PortfolioPositionCreateResponse(BaseModel):
 
 class PortfolioPositionUpdateResponse(BaseModel):
     id:int
+    type:str
     amount:float
+    currency_id:int
 
 class PortfolioPositionCreate(BaseModel):
     portfolio_id: int

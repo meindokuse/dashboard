@@ -1,4 +1,7 @@
 from src.data.unitofwork import IUnitOfWork
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CurrencyService:
@@ -14,3 +17,13 @@ class CurrencyService:
         async with self.uow:
             currency = await self.uow.currency.find_one(code=code)
             return currency
+    async def get_by_code_for_celery(self,code:str):
+        try:
+            logger.debug(f"Searching currency: {code}")
+            currency = await self.uow.currency.find_one(code=code)
+            if not currency:
+                logger.warning(f"Currency not found: {code}")
+            return currency
+        except Exception as e:
+            logger.error(f"Currency lookup failed for {code}: {e}")
+            raise

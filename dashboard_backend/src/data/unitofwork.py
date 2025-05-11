@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Type
 
+from src.repositories.alert_repository import AlertRepository
 from src.database.database import async_session_maker
 from src.repositories.currency_repository import CurrencyRepository
 from src.repositories.portfolio_position_repository import PortfolioPositionRepository
@@ -8,7 +9,9 @@ from src.repositories.portfolio_repository import PortfolioRepository
 from src.repositories.rate_repository import RateRepository
 from src.repositories.transaction_repository import TransactionRepository
 from src.repositories.user_repository import UserRepository
+import logging
 
+logger = logging.getLogger(__name__)
 
 # https://github1s.com/cosmicpython/code/tree/chapter_06_uow
 class IUnitOfWork(ABC):
@@ -18,6 +21,7 @@ class IUnitOfWork(ABC):
     portfolio: PortfolioRepository
     portfolio_position: PortfolioPositionRepository
     transaction: TransactionRepository
+    alert: AlertRepository
 
 
     @abstractmethod
@@ -53,9 +57,14 @@ class UnitOfWork(IUnitOfWork):
         self.portfolio = PortfolioRepository(self.session)
         self.portfolio_position = PortfolioPositionRepository(self.session)
         self.transaction = TransactionRepository(self.session)
+        self.alert = AlertRepository(self.session)
+        logger.info("ОПен UoW session")
+
         return self  # Возвращаем себя для использования в `async with`
 
     async def __aexit__(self, *args):
+        logger.info("Closing UoW session")
+
         await self.rollback()
         await self.session.close()
 
