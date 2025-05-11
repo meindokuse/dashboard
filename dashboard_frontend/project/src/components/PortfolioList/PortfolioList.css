@@ -26,8 +26,8 @@
 
 .portfolio-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 15px;
   margin-bottom: 20px;
 }
 
@@ -54,4 +54,64 @@
   .portfolio-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* New styles for create portfolio */
+.create-portfolio-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  text-align: center;
+}
+
+.create-portfolio-btn {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: none;
+  border-radius: 10px;
+  padding: 15px 30px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+.create-portfolio-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
+}
+
+.create-portfolio-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.create-portfolio-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  padding: 10px 15px;
+  color: white;
+  font-size: 16px;
+}
+
+.create-portfolio-submit {
+  background: #4caf50;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 15px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.create-portfolio-submit:hover {
+  background: #3e8e41;
 }

@@ -9,37 +9,47 @@ export const Login = ({ onFormSwitch }) => {
   const [remember, setRemember] = useState(false);
   const { login } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await fetch(API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.LOGIN, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password: pass,
-          is_remember: remember
-        }),
-        credentials: 'include',
-        mode:'cors'
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Ошибка входа');
-      }
-
-      const data = await response.json();
-      localStorage.setItem('token', data.access_token);
-      login(data.access_token);
-      
-    } catch (error) {
-      console.error('Ошибка:', error);
-      alert(error.message);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await fetch(API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.LOGIN, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password: pass,
+        is_remember: remember
+      }),
+      credentials: 'include',
+      mode: 'cors'
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Ошибка входа');
     }
-  };
+
+    const data = await response.json();
+    
+    // Сохраняем и токен и session_id (если есть)
+    if (data.access_token) {
+      localStorage.setItem('token', data.access_token);
+    }
+    if (data.session_id) {
+      localStorage.setItem('session_id', data.session_id);
+    }
+    
+    // Вызываем login с полученными данными
+    login(data.access_token);
+    
+  } catch (error) {
+    console.error('Ошибка:', error);
+    alert(error.message);
+  }
+};
+
 
     return (
         <div className="auth-form-container">
