@@ -3,10 +3,10 @@ import './Notifications.css';
 import { API_CONFIG } from '../../config/config';
 
 const CURRENCY_OPTIONS = [
-  { value: 1, label: 'CNY' },
-  { value: 2, label: 'USD' },
-  { value: 3, label: 'EUR' },
-  { value: 4, label: 'BTC' },
+  { value: 1, label: 'BTC' },
+  { value: 2, label: 'SOL' },
+  { value: 3, label: 'ETH' },
+  { value: 4, label: 'TON' },
 ];
 
 const Notifications = ({ user, onUpdate }) => {
@@ -22,39 +22,39 @@ const Notifications = ({ user, onUpdate }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [isActive, setIsActive] = useState(true);
 
-  useEffect(() => {
-    const fetchAlert = async () => {
-      try {
-        const sessionId = localStorage.getItem('session_id');
-        const response = await fetch(`${API_CONFIG.BASE_URL}/alert/alerts`, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'x-session-id': sessionId || '',
-          },
-          credentials: 'include',
-        });
+  const fetchAlert = async () => {
+    try {
+      const sessionId = localStorage.getItem('session_id');
+      const response = await fetch(`${API_CONFIG.BASE_URL}/alert/alerts`, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'x-session-id': sessionId || '',
+        },
+        credentials: 'include',
+      });
 
-        if (!response.ok) {
-          throw new Error('Ошибка при загрузке уведомления');
-        }
-
-        const data = await response.json();
-        setAlert(data || null);
-        onUpdate({ hasAlerts: !!data });
-        if (data) {
-          setNotificationChannel(data.notification_channel || 'email');
-          setHour(data.notification_time ? data.notification_time.split(':')[0] : '');
-          setCurrency(data.currency_id?.toString() || '');
-          setIsActive(data.is_active !== undefined ? data.is_active : true);
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error('Ошибка при загрузке уведомления');
       }
-    };
 
+      const data = await response.json();
+      setAlert(data || null);
+      onUpdate({ hasAlerts: !!data });
+      if (data) {
+        setNotificationChannel(data.notification_channel || 'email');
+        setHour(data.notification_time ? data.notification_time.split(':')[0] : '');
+        setCurrency(data.currency_id?.toString() || '');
+        setIsActive(data.is_active !== undefined ? data.is_active : true);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAlert();
   }, []);
 
@@ -71,7 +71,7 @@ const Notifications = ({ user, onUpdate }) => {
     setNotificationChannel(alert.notification_channel || 'email');
     setHour(alert.notification_time ? alert.notification_time.split(':')[0] : '');
     setCurrency(alert.currency_id?.toString() || '');
-    setIsActive(alert.is_active !== undefined ? alert.is_active : true); // Синхронизируем isActive
+    setIsActive(alert.is_active !== undefined ? alert.is_active : true);
     setEditingAlert(alert.id);
     setShowTelegramLink(false);
     setSuccessMessage('');
@@ -103,85 +103,69 @@ const Notifications = ({ user, onUpdate }) => {
           is_active: !currentActiveStatus,
         }),
       });
-    
+
       if (!response.ok) {
         throw new Error('Ошибка при изменении статуса уведомления');
       }
-    
-      const updatedAlert = await response.json();
-      // Обновляем alert и isActive синхронно
-      setAlert(prev => ({
-        ...prev,
-        is_active: updatedAlert.is_active !== undefined ? updatedAlert.is_active : !currentActiveStatus,
-      }));
-      setIsActive(updatedAlert.is_active !== undefined ? updatedAlert.is_active : !currentActiveStatus);
+
+      await fetchAlert(); // Повторно загружаем данные после изменения статуса
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!hour || !currency) {
-    setError('Пожалуйста, заполните все поля');
-    return;
-  }
-
-  try {
-    const sessionId = localStorage.getItem('session_id');
-    const requestBody = {
-      currency_id: parseInt(currency),
-      notification_time: `${hour}:00:00`,
-      notification_channel: notificationChannel,
-      is_active: isActive, // Используем локальное состояние isActive
-    };
-
-    if (editingAlert) {
-      requestBody.id = editingAlert;
+    if (!hour || !currency) {
+      setError('Пожалуйста, заполните все поля');
+      return;
     }
 
-    const response = await fetch(
-      `${API_CONFIG.BASE_URL}/alert/${editingAlert ? 'update_alert' : 'create_alert'}`,
-      {
-        method: editingAlert ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          'x-session-id': sessionId || '',
-        },
-        credentials: 'include',
-        body: JSON.stringify(requestBody),
+    try {
+      const sessionId = localStorage.getItem('session_id');
+      const requestBody = {
+        currency_id: parseInt(currency),
+        notification_time: `${hour}:00:00`,
+        notification_channel: notificationChannel,
+        is_active: isActive,
+      };
+
+      if (editingAlert) {
+        requestBody.id = editingAlert;
       }
-    );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Ошибка при сохранении уведомления');
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/alert/${editingAlert ? 'update_alert' : 'create_alert'}`,
+        {
+          method: editingAlert ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'x-session-id': sessionId || '',
+          },
+          credentials: 'include',
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Ошибка при сохранении уведомления');
+      }
+
+      await fetchAlert(); // Повторно загружаем данные после сохранения
+
+      if (notificationChannel === 'telegram') {
+        setSuccessMessage('Настройки сохранены! Теперь перейдите в бота для завершения настройки.');
+        setShowTelegramLink(true);
+      } else {
+        setShowModal(false);
+      }
+    } catch (err) {
+      setError(err.message);
     }
-
-    const updatedAlert = await response.json();
-    setAlert({
-      id: updatedAlert.id,
-      currency_id: updatedAlert.currency_id,
-      notification_time: updatedAlert.notification_time,
-      notification_channel: updatedAlert.notification_channel,
-      is_active: updatedAlert.is_active !== undefined ? updatedAlert.is_active : isActive,
-    });
-    setIsActive(updatedAlert.is_active !== undefined ? updatedAlert.is_active : isActive); // Синхронизируем isActive
-
-    onUpdate({ hasAlerts: true });
-
-    if (notificationChannel === 'telegram') {
-      setSuccessMessage('Настройки сохранены! Теперь перейдите в бота для завершения настройки.');
-      setShowTelegramLink(true);
-    } else {
-      setShowModal(false);
-    }
-  } catch (err) {
-    setError(err.message);
-  }
-};
+  };
 
   const getCurrencyName = (currencyId) => {
     const currency = CURRENCY_OPTIONS.find((c) => c.value === currencyId);
@@ -261,18 +245,6 @@ const Notifications = ({ user, onUpdate }) => {
                   <span className={notificationChannel === 'telegram' ? 'active' : ''}>Telegram</span>
                 </div>
               </label>
-              <div className="status-toggle-container">
-                <span className="status-toggle-label">Статус рассылки:</span>
-                <label className="status-toggle">
-                  <input
-                    type="checkbox"
-                    checked={isActive}
-                    onChange={(e) => setIsActive(e.target.checked)}
-                  />
-                  <span className="status-slider"></span>
-                </label>
-                <span>{isActive ? 'Активна' : 'Неактивна'}</span>
-              </div>
               <label>
                 Валюта для отслеживания
                 <select

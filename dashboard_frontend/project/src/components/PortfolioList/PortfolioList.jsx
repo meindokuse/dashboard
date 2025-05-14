@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './PortfolioList.css';
-import { API_CONFIG } from "../../config/config";
+import { API_CONFIG } from '../../config/config';
 
 function PortfolioList() {
   const navigate = useNavigate();
@@ -12,14 +12,14 @@ function PortfolioList() {
   const [portfolioName, setPortfolioName] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10
+    limit: 10,
   });
 
   const fetchPortfolios = async () => {
     try {
-      const sessionId = localStorage.getItem("session_id");
+      const sessionId = localStorage.getItem('session_id');
       const { page, limit } = pagination;
-      
+
       const response = await fetch(`${API_CONFIG.BASE_URL}/portfolio/portfolios?page=${page}&limit=${limit}`, {
         method: 'GET',
         headers: {
@@ -27,14 +27,15 @@ function PortfolioList() {
           'Accept': 'application/json',
           'x-session-id': sessionId || '',
         },
-        credentials: 'include'
+        credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error('Ошибка при загрузке портфелей');
       }
-      
+
       const data = await response.json();
+      console.log('portfolios data:', data); // Для отладки
       const portfoliosData = Array.isArray(data) ? data : [data];
       setPortfolios(portfoliosData);
     } catch (err) {
@@ -48,19 +49,20 @@ function PortfolioList() {
     fetchPortfolios();
   }, [pagination]);
 
-  const handlePortfolioClick = (portfolioId) => {
-    navigate(`/portfolio/${portfolioId}`);
+  const handlePortfolioClick = (portfolioId, portfolioName) => {
+    navigate(`/portfolio/${portfolioId}`, {
+      state: { portfolioName },
+    });
   };
 
   const handleCreatePortfolio = async (e) => {
     e.preventDefault();
     try {
-      const sessionId = localStorage.getItem("session_id");
-      
-      // Формируем URL с параметром name
+      const sessionId = localStorage.getItem('session_id');
+
       const url = new URL(`${API_CONFIG.BASE_URL}/portfolio/create`);
       url.searchParams.append('name', portfolioName);
-      
+
       const response = await fetch(url.toString(), {
         method: 'POST',
         headers: {
@@ -70,32 +72,27 @@ function PortfolioList() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          user_id: sessionId
-        })
+          user_id: sessionId,
+        }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Ошибка при создании портфеля');
       }
-      
-      // Получаем ID нового портфеля
+
       const newPortfolioId = await response.json();
-      
-      // Создаем временный объект нового портфеля
+
       const newPortfolio = {
         id: newPortfolioId,
         user_id: sessionId,
         name: portfolioName,
-        created_at: new Date().toISOString() // Используем текущую дату
+        created_at: new Date().toISOString(),
       };
-      
-      // Добавляем новый портфель в начало списка
-      setPortfolios(prevPortfolios => [newPortfolio, ...prevPortfolios]);
-      
-      // Очищаем форму и скрываем её
+
+      setPortfolios((prevPortfolios) => [newPortfolio, ...prevPortfolios]);
+
       setPortfolioName('');
       setShowCreateForm(false);
-      
     } catch (err) {
       setError(err.message);
     }
@@ -114,7 +111,7 @@ function PortfolioList() {
       <div className="portfolio-header">
         <h2>Мои портфели</h2>
         <div className="create-portfolio-wrapper">
-          <button 
+          <button
             className="create-portfolio-btn"
             onClick={() => setShowCreateForm(!showCreateForm)}
           >
@@ -140,11 +137,11 @@ function PortfolioList() {
 
       {portfolios.length > 0 ? (
         <div className="portfolio-grid">
-          {portfolios.map(portfolio => (
-            <div 
-              key={portfolio.id} 
+          {portfolios.map((portfolio) => (
+            <div
+              key={portfolio.id}
               className="portfolio-card"
-              onClick={() => handlePortfolioClick(portfolio.id)}
+              onClick={() => handlePortfolioClick(portfolio.id, portfolio.name)} // Исправлено
             >
               <h3>{portfolio.name}</h3>
               <p>Дата создания: {new Date(portfolio.created_at).toLocaleDateString()}</p>

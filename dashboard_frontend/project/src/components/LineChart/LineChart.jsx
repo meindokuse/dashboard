@@ -5,8 +5,8 @@ import { API_CONFIG } from '../../config/config';
 import { useParams } from "react-router-dom";
 
 const COLOR_SCHEMES = {
-  default: ['#3366cc', '#dc3912', '#ff9900'],
-  colorblind: ['#000000', '#E69F00', '#56B4E9']
+  default: ['#3366cc', '#dc3912', '#ff9900', '#FF0000'],
+  colorblind: ['#000000', '#E69F00', '#56B4E9', '#FF0000']
 };
 
 const getRangeTitle = (range) => {
@@ -22,27 +22,29 @@ const getRangeTitle = (range) => {
 const calculateDateRange = (range) => {
   const now = new Date();
   const ranges = {
-    '1h': () => new Date(now.getTime() - 60 * 60 * 1000),
-    '1d': () => new Date(now.getTime() - 24 * 60 * 60 * 1000),
-    '1m': () => new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()),
-    '1y': () => new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+    '1h': () => new Date(now.getTime() - 57 * 60 * 1000),
+    '1d': () => new Date(now.getTime() - 24 * 57 * 60 * 1000),
+    '1m': () => new Date(now.setMonth(now.getMonth() - 1)),
+    '1y': () => new Date(now.setFullYear(now.getFullYear() - 1))
   };
-  return { start: ranges[range](), end: now };
+  return { start: ranges[range](), end: new Date() };
 };
 
-const processData = (apiData, stats) => {
-  const header = ['Время', 'Цена', 'Среднее', 'Медиана'];
+const processData = (rates, stats) => {
+  const header = ['Время', 'Цена', 'Среднее', 'Медиана', 'Выбросы'];
   const data = [header];
-  
-  apiData.forEach(item => {
+  const outliers = new Set(stats?.outliers || []);
+
+  rates?.forEach(item => {
     data.push([
-      item.timestamp,
+      new Date(item.timestamp),
       item.rate,
-      stats.mean,
-      stats.median
+      stats?.mean || 0,
+      stats?.median || 0,
+      outliers.has(item.rate) ? item.rate : null
     ]);
   });
-  
+
   return data;
 };
 
@@ -61,27 +63,19 @@ export default function LineChart() {
         const { start, end } = calculateDateRange(timeRange);
         
         const url = new URL(
-          API_CONFIG.ENDPOINTS.CURRENCY_RATES(coinId), 
-          API_CONFIG.BASE_URL
+          `${API_CONFIG.BASE_URL}/rate/currencies/${coinId}/rates/`
         );
         
         url.searchParams.set('start_date', start.toISOString());
         url.searchParams.set('end_date', end.toISOString());
-    
-        const response = await fetch(url);
-        
-        if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
 
-        const responseData = await response.json();
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Ошибка: ${response.status}`);
         
-        const processedData = processData(
-          responseData.rates,
-          responseData.statistics
-        );
-        
-        setChartData(processedData);
+        const { rates, statistics } = await response.json();
+        setChartData(processData(rates, statistics));
       } catch (err) {
-        setError(err.message || 'Ошибка загрузки данных');
+        setError(err.message);
         setChartData([]);
       } finally {
         setLoading(false);
@@ -98,11 +92,26 @@ export default function LineChart() {
     series: {
       0: { color: COLOR_SCHEMES[colorScheme][0], lineWidth: 2 },
       1: { color: COLOR_SCHEMES[colorScheme][1], lineDashStyle: [4, 4] },
-      2: { color: COLOR_SCHEMES[colorScheme][2], lineDashStyle: [2, 2] }
+      2: { color: COLOR_SCHEMES[colorScheme][2], lineDashStyle: [2, 2] },
+      3: { 
+        type: 'scatter',
+        color: COLOR_SCHEMES[colorScheme][3],
+        pointSize: 6,
+        lineWidth: 0
+      }
     },
-    hAxis: { title: 'Время' },
-    vAxis: { title: 'Цена', minValue: 0 },
-    chartArea: { width: '85%', height: '70%' }
+    hAxis: { 
+      title: 'Время',
+      format: 'dd.MM.yyyy HH:mm'
+    },
+    vAxis: { 
+      title: 'Цена', 
+      minValue: 0 
+    },
+    chartArea: { 
+      width: '85%', 
+      height: '70%' 
+    }
   };
 
   return (
@@ -132,7 +141,7 @@ export default function LineChart() {
       {loading && <div className="loading">Загрузка...</div>}
       {error && <div className="error">{error}</div>}
       
-      {!loading && !error && chartData.length > 0 && (
+      {!loading && !error && chartData.length > 1 && (
         <Chart
           chartType="LineChart"
           width="100%"
