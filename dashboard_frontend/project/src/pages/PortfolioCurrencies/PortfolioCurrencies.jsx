@@ -88,8 +88,13 @@ const PortfolioCurrencies = () => {
   const { portfolioId } = useParams();
 
   const handleBuyClick = (currencySymbol) => {
-    console.log(`Покупка ${currencySymbol} для портфеля ${portfolioId}`);
-    navigate(`/buy/${currencySymbol}?portfolio=${portfolioId}`);
+    const coinId = currencySymbol;
+    navigate(`/coin/${coinId}`, {
+      state: { 
+        portfolioId, 
+        action: 'buy'
+      }
+    });
   };
 
   useEffect(() => {
@@ -110,19 +115,19 @@ const PortfolioCurrencies = () => {
 
     const defaultCurrencies = [
       {
-        id: 1,
+        id: 2,
         symbol: 'USD',
         name: 'Доллар США',
         image: currencyImages['USD']
       },
       {
-        id: 2,
+        id: 3,
         symbol: 'EUR',
         name: 'Евро',
         image: currencyImages['EUR']
       },
       {
-        id: 3,
+        id: 1,
         symbol: 'CNY',
         name: 'Китайский юань',
         image: currencyImages['CNY']
