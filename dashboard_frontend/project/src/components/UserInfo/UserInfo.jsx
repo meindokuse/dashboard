@@ -87,7 +87,7 @@ function UserInfo({ userId }) {
         </p>
         <p>
           <strong>Баланс:</strong>
-          <span>${user.balance?.toFixed(2) || '0.00'}</span>
+          <span>₽ {user.balance?.toFixed(2) || '0.00'}</span>
         </p>
         <p>
           <strong>Уникальный ID:</strong>
