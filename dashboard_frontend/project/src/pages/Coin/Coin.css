@@ -38,27 +38,6 @@
   margin-bottom: 0.5rem;
 }
 
-.stats {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  padding: 1rem;
-  margin-bottom: 2rem;
-}
-
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  margin: 0.5rem 0;
-}
-
-.positive {
-  color: #4CAF50;
-}
-
-.negative {
-  color: #F44336;
-}
-
 .description {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 10px;
@@ -66,53 +45,27 @@
   margin-bottom: 2rem;
 }
 
-/* Торговая секция */
-.trading-section {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 1.5rem;
-  border-radius: 12px;
-  margin: 2rem 0;
+/* Портфель селектор */
+.portfolio-section {
+  margin-top: 2rem;
 }
 
-.action-switcher {
-  display: flex;
-  gap: 1rem;
+.portfolio-selector {
+  position: relative;
   margin-bottom: 1.5rem;
 }
 
-.trade-btn {
-  flex: 1;
-  padding: 0.8rem;
-  border: none;
-  border-radius: 8px;
-  background: #2a2a2a;
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.trade-btn.active {
-  background: #3a3a3a;
-}
-
-.trade-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.balance-info {
-  color: #4CAF50;
-  font-size: 0.9em;
-}
-
-.input-group label {
+.portfolio-selector label {
   display: block;
   margin-bottom: 0.5rem;
   color: #ccc;
 }
 
-.input-group input {
+.portfolio-dropdown {
+  position: relative;
+}
+
+.portfolio-btn {
   width: 100%;
   padding: 0.8rem;
   background: #1a1a1a;
@@ -120,28 +73,102 @@
   border-radius: 8px;
   color: #fff;
   font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
 }
 
-.submit-btn {
-  width: 100%;
+.portfolio-btn:hover {
+  background: #2a2a2a;
+}
+
+.dropdown-arrow {
+  font-size: 0.8rem;
+}
+
+.portfolio-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.portfolio-menu-item {
+  padding: 0.8rem;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.portfolio-menu-item:hover {
+  background: #2a2a2a;
+}
+
+/* Кнопки покупки/продажи */
+.trade-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.trade-btn {
+  flex: 1;
   padding: 1rem;
   border: none;
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
-  transition: opacity 0.3s;
-}
-
-.submit-btn.buy {
-  background: #4CAF50;
+  transition: opacity 0.3s, transform 0.2s;
   color: white;
 }
 
-.submit-btn.sell {
-  background: #f44336;
-  color: white;
+.trade-btn.buy-sell {
+  background: linear-gradient(90deg, #4CAF50 0%, #f44336 100%);
 }
 
-.submit-btn:hover {
+.trade-btn:hover {
   opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+/* Нет портфелей */
+.no-portfolios {
+  color: #ccc;
+  font-size: 1rem;
+}
+
+.create-portfolio-link {
+  color: #4CAF50;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.create-portfolio-link:hover {
+  color: #66BB6A;
+}
+
+/* Неавторизованный пользователь */
+.auth-hint {
+  color: #ccc;
+  font-size: 1rem;
+  margin-top: 2rem;
+}
+
+.auth-hint a {
+  color: #4CAF50;
+  text-decoration: underline;
+}
+
+.auth-hint a:hover {
+  color: #66BB6A;
 }
