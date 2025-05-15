@@ -303,3 +303,65 @@
   opacity: 0.5;
 }
 
+
+/* Стили для формы действия */
+.action-form {
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.action-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.action-input-container label {
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+.action-input-container input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.total-cost {
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.error-message {
+  color: #f44336;
+  font-size: 0.8rem;
+}
+
+.confirm-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.confirm-button:hover:not(:disabled) {
+  background-color: #388e3c;
+}
+
+.confirm-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
