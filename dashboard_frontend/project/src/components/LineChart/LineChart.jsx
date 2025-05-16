@@ -20,28 +20,53 @@ const getRangeTitle = (range) => {
 };
 
 const calculateDateRange = (range) => {
-  const now = new Date();
+  const now = new Date(); // Локальное время пользователя
   const ranges = {
-    '1h': () => new Date(now.getTime() - 57 * 60 * 1000),
-    '1d': () => new Date(now.getTime() - 24 * 57 * 60 * 1000),
-    '1m': () => new Date(now.setMonth(now.getMonth() - 1)),
-    '1y': () => new Date(now.setFullYear(now.getFullYear() - 1))
+    '1h': () => new Date(now - 60 * 60 * 1000),
+    '1d': () => new Date(now - 24 * 60 * 60 * 1000),
+    '1m': () => new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()),
+    '1y': () => new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
   };
-  return { start: ranges[range](), end: new Date() };
+  return { 
+    start: ranges[range](), 
+    end: now 
+  };
+};
+
+// Определение формата времени в зависимости от диапазона
+const getTimeFormat = (range) => {
+  switch (range) {
+    case '1h':
+    case '1d':
+      return 'HH:mm';
+    case '1m':
+      return 'dd.MM.yyyy';
+    case '1y':
+      return 'MM.yyyy';
+    default:
+      return 'dd.MM.yyyy HH:mm';
+  }
 };
 
 const processData = (rates, stats) => {
-  const header = ['Время', 'Цена', 'Среднее', 'Медиана', 'Выбросы'];
+  const header = [
+    { type: 'date', label: 'Время' },
+    { type: 'number', label: 'Цена' },
+    { type: 'number', label: 'Среднее' },
+    { type: 'number', label: 'Медиана' },
+    { type: 'number', label: 'Выбросы' }
+  ];
+  
   const data = [header];
-  const outliers = new Set(stats?.outliers || []);
+  const outliers = new Set(stats?.outliers?.map(Number) || []);
 
   rates?.forEach(item => {
     data.push([
       new Date(item.timestamp),
-      item.rate,
-      stats?.mean || 0,
-      stats?.median || 0,
-      outliers.has(item.rate) ? item.rate : null
+      Number(item.rate),
+      Number(stats?.mean || 0),
+      Number(stats?.median || 0),
+      outliers.has(Number(item.rate)) ? Number(item.rate) : null
     ]);
   });
 
@@ -62,12 +87,24 @@ export default function LineChart() {
         setLoading(true);
         const { start, end } = calculateDateRange(timeRange);
         
+        // Конвертируем локальное время в UTC
+        const toUTC = (date) => new Date(
+          Date.UTC(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate(),
+            date.getHours(),
+            date.getMinutes(),
+            date.getSeconds()
+          )
+        );
+    
         const url = new URL(
           `${API_CONFIG.BASE_URL}/rate/currencies/${coinId}/rates/`
         );
         
-        url.searchParams.set('start_date', start.toISOString());
-        url.searchParams.set('end_date', end.toISOString());
+        url.searchParams.set('start_date', toUTC(start).toISOString());
+        url.searchParams.set('end_date', toUTC(end).toISOString());
 
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Ошибка: ${response.status}`);
@@ -87,30 +124,69 @@ export default function LineChart() {
 
   const options = {
     title: `Динамика цены за ${getRangeTitle(timeRange)}`,
-    curveType: "function",
+    seriesType: 'line',
     legend: { position: "bottom" },
+    explorer: {
+      actions: ['dragToZoom', 'rightClickToReset'],
+      axis: 'horizontal',
+      keepInBounds: true
+    },
     series: {
-      0: { color: COLOR_SCHEMES[colorScheme][0], lineWidth: 2 },
-      1: { color: COLOR_SCHEMES[colorScheme][1], lineDashStyle: [4, 4] },
-      2: { color: COLOR_SCHEMES[colorScheme][2], lineDashStyle: [2, 2] },
+      0: { 
+        type: 'line',
+        color: COLOR_SCHEMES[colorScheme][0], 
+        lineWidth: 2,
+        targetAxisIndex: 0
+      },
+      1: { 
+        type: 'line',
+        color: COLOR_SCHEMES[colorScheme][1], 
+        lineDashStyle: [4, 4],
+        targetAxisIndex: 0
+      },
+      2: { 
+        type: 'line',
+        color: COLOR_SCHEMES[colorScheme][2], 
+        lineDashStyle: [2, 2],
+        targetAxisIndex: 0
+      },
       3: { 
         type: 'scatter',
         color: COLOR_SCHEMES[colorScheme][3],
         pointSize: 6,
-        lineWidth: 0
+        targetAxisIndex: 0
       }
     },
     hAxis: { 
       title: 'Время',
-      format: 'dd.MM.yyyy HH:mm'
+      format: getTimeFormat(timeRange), // Динамический формат
+      gridlines: { count: -1 }
     },
-    vAxis: { 
-      title: 'Цена', 
-      minValue: 0 
+    vAxes: {
+      0: { 
+        title: 'Цена (RUB)', 
+        minValue: 0,
+        format: '####.##'
+      }
     },
-    chartArea: { 
+    chartArea: {
+      left: 90,
+      top: 40,    
+      bottom: 60, 
       width: '85%', 
       height: '70%' 
+    },
+    explorer: {
+      actions: ['dragToZoom', 'rightClickToReset'],
+      axis: 'horizontal',
+      keepInBounds: false, // Разрешаем выход за пределы данных
+      maxZoomIn: 0.1,     // Максимальное приближение
+      maxZoomOut: 10,     // Максимальное отдаление
+      zoomDelta: 1.5      // Чувствительность зума
+    },
+    crosshair: {
+      color: '#000',      // Линия при наведении
+      orientation: 'both' // Вертикальная+горизонтальная
     }
   };
 
@@ -143,7 +219,7 @@ export default function LineChart() {
       
       {!loading && !error && chartData.length > 1 && (
         <Chart
-          chartType="LineChart"
+          chartType="ComboChart"
           width="100%"
           height="500px"
           data={chartData}
