@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './PortfolioCurrencies.css';
 import { API_CONFIG } from '../../config/config';
-import Alerts from '../../components/AlertPortfolio/AlertPortfolio'
+import AlertPortfolio from '../../components/AlertPortfolio/AlertPortfolio'; // Импорт компонента уведомлений
 
 const STATIC_CURRENCIES = [
   { id: 1, code: 'BTC', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579' },
@@ -18,13 +18,12 @@ const PortfolioCurrencies = () => {
   const [portfolioSummary, setPortfolioSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [actionStates, setActionStates] = useState({});
   const { portfolioId } = useParams();
   const { state } = useLocation();
   const navigate = useNavigate();
   const portfolioName = state?.portfolioName || `Портфель ${portfolioId}`;
-
-  // Состояние для формы покупки/продажи
-  const [actionStates, setActionStates] = useState({}); // { [currencyId]: { action, amount, error, isSubmitting } }
 
   const handleActionClick = (currencyId, selectedAction) => {
     setActionStates((prev) => ({
@@ -39,7 +38,7 @@ const PortfolioCurrencies = () => {
   };
 
   const handleAmountChange = (currencyId, value) => {
-    if (value === '' || (parseFloat(value) > 0 && !isNaN(value))) {
+    if (value === '' || (parseFloat(value) > -0.9999 && !isNaN(value))) {
       setActionStates((prev) => ({
         ...prev,
         [currencyId]: {
@@ -164,7 +163,6 @@ const PortfolioCurrencies = () => {
         name: portfolioName,
       });
 
-      // Запрос курсов монет
       const ratesResponse = await fetch(`${API_CONFIG.BASE_URL}/rate/last_rates`, {
         method: 'GET',
         headers: {
@@ -182,7 +180,6 @@ const PortfolioCurrencies = () => {
         console.warn('Не удалось загрузить курсы монет');
       }
 
-      // Запрос позиций портфеля
       const positionsResponse = await fetch(`${API_CONFIG.BASE_URL}/portfolio/${portfolioId}/portfolio_positions`, {
         method: 'GET',
         headers: {
@@ -193,7 +190,6 @@ const PortfolioCurrencies = () => {
         credentials: 'include',
       });
 
-      // Запрос профита портфеля
       const profitResponse = await fetch(`${API_CONFIG.BASE_URL}/portfolio/portfolio_profit?portfolio_id=${portfolioId}`, {
         method: 'GET',
         headers: {
@@ -209,16 +205,20 @@ const PortfolioCurrencies = () => {
 
       if (positionsResponse.ok) {
         positionsData = await positionsResponse.json();
+      } else {
+        console.warn('Не удалось загрузить позиции портфеля');
       }
 
       if (profitResponse.ok) {
         profitData = await profitResponse.json();
-        setPortfolioSummary(profitData.summary);
+        setPortfolioSummary(profitData?.summary || null);
+      } else {
+        console.warn('Не удалось загрузить данные о прибыли');
       }
 
       const userCurrencies = STATIC_CURRENCIES.map((staticCurrency) => {
         const position = positionsData.find((p) => p.currency_id === staticCurrency.id);
-        const profitPosition = profitData?.positions.find((p) => p.currency === staticCurrency.code);
+        const profitPosition = profitData?.positions?.find((p) => p.currency === staticCurrency.code);
         const currentRate = lastRates[staticCurrency.code] || 0;
 
         if (position && profitPosition) {
@@ -243,7 +243,6 @@ const PortfolioCurrencies = () => {
       });
       setCurrencies(userCurrencies);
 
-      // Запрос транзакций
       const transactionsResponse = await fetch(
         `${API_CONFIG.BASE_URL}/transaction/transactions?portfolio_id=${portfolioId}`,
         {
@@ -270,6 +269,7 @@ const PortfolioCurrencies = () => {
       }
     } catch (err) {
       setError(err.message);
+      console.error('Ошибка загрузки данных портфеля:', err);
     } finally {
       setIsLoading(false);
     }
@@ -331,9 +331,14 @@ const PortfolioCurrencies = () => {
     <div className="portfolio-page">
       <div className="portfolio-header">
         <h1>{portfolio.name}</h1>
+        <div className="alert-button-container">
+          <button className="alert-btn" onClick={() => setShowAlertModal(true)}>
+            Настроить уведомления
+          </button>
+        </div>
         {portfolioSummary && (
           <div className="portfolio-summary">
-            <p>Стоимость портфеля: ₽{portfolioSummary.total_current_value.toFixed(2)}</p>
+            <p>Стоимость портфеля: ₽{portfolioSummary.total_current_value?.toFixed(2) || '0.00'}</p>
             <p
               className={`portfolio-profit ${
                 portfolioSummary.total_profit_percent > 0
@@ -343,11 +348,20 @@ const PortfolioCurrencies = () => {
                   : 'neutral'
               }`}
             >
-              Прибыль портфеля: {portfolioSummary.total_profit_percent.toFixed(2)}%
+              Прибыль портфеля: {portfolioSummary.total_profit_percent?.toFixed(2) || '0.00'}%
             </p>
           </div>
         )}
       </div>
+
+      {showAlertModal
+
+ && (
+        <AlertPortfolio
+          portfolioId={portfolioId}
+          onClose={() => setShowAlertModal(false)}
+        />
+      )}
 
       <div className="crypto-dashboard">
         <div className="currency-cards-container">
@@ -355,7 +369,7 @@ const PortfolioCurrencies = () => {
             const actionState = actionStates[currency.id] || {};
             const totalCost = actionState.amount
               ? (parseFloat(actionState.amount) * currency.currentPrice).toFixed(2)
-              : '0.00';
+              : '0.00'; // Исправлено: hastag('0.00') → '0.00'
 
             return (
               <div key={currency.id} className="currency-card">
