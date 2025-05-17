@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './PortfolioList.css';
 import { API_CONFIG } from '../../config/config';
+// Добавляем импорт иконки доллара
+import { FaDollarSign } from 'react-icons/fa';
 
 function PortfolioList() {
   const navigate = useNavigate();
@@ -14,6 +16,7 @@ function PortfolioList() {
     page: 1,
     limit: 10,
   });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   const fetchPortfolios = async () => {
     try {
@@ -35,13 +38,39 @@ function PortfolioList() {
       }
 
       const data = await response.json();
-      console.log('portfolios data:', data); // Для отладки
       const portfoliosData = Array.isArray(data) ? data : [data];
       setPortfolios(portfoliosData);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeletePortfolio = async (portfolioId) => {
+    try {
+      const sessionId = localStorage.getItem('session_id');
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/portfolio/delete_portfolio?portfolio_id=${portfolioId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-session-id': sessionId || '',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка при удалении портфеля');
+      }
+
+      setPortfolios((prevPortfolios) => 
+        prevPortfolios.filter((portfolio) => portfolio.id !== portfolioId)
+      );
+      setShowDeleteConfirm(null);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -141,9 +170,26 @@ function PortfolioList() {
             <div
               key={portfolio.id}
               className="portfolio-card"
-              onClick={() => handlePortfolioClick(portfolio.id, portfolio.name)} // Исправлено
+              onClick={(e) => {
+                // Prevent navigation when clicking delete button
+                if (!e.target.classList.contains('delete-portfolio-btn')) {
+                  handlePortfolioClick(portfolio.id, portfolio.name);
+                }
+              }}
             >
-              <h3>{portfolio.name}</h3>
+              <div className="portfolio-header">
+                <h3>{portfolio.name}</h3>
+                {/* Заменяем текстовый крестик на иконку доллара */}
+                <button
+                  className="delete-portfolio-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteConfirm(portfolio.id);
+                  }}
+                >
+                  <FaDollarSign size={16} />
+                </button>
+              </div>
               <p>Дата создания: {new Date(portfolio.created_at).toLocaleDateString()}</p>
             </div>
           ))}
@@ -151,6 +197,31 @@ function PortfolioList() {
       ) : (
         <div className="no-portfolios-message">
           <p>У вас пока нет портфелей</p>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="confirmation-modal">
+          <div className="confirmation-content">
+            <p>
+              Вы уверены в удалении портфеля?<br />
+              В случае присутствия купленных валют на портфеле, при удалении они будут проданы автоматически по текущему курсу.
+            </p>
+            <div className="confirmation-buttons">
+              <button
+                className="confirm-btn cancel-delete"
+                onClick={() => setShowDeleteConfirm(null)}
+              >
+                Отмена
+              </button>
+              <button
+                className="confirm-btn confirm-delete"
+                onClick={() => handleDeletePortfolio(showDeleteConfirm)}
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
