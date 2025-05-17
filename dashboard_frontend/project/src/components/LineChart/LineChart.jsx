@@ -126,11 +126,6 @@ export default function LineChart() {
     title: `Динамика цены за ${getRangeTitle(timeRange)}`,
     seriesType: 'line',
     legend: { position: "bottom" },
-    explorer: {
-      actions: ['dragToZoom', 'rightClickToReset'],
-      axis: 'horizontal',
-      keepInBounds: true
-    },
     series: {
       0: { 
         type: 'line',
