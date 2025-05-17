@@ -11,7 +11,7 @@ class PortfolioRead(BaseModel):
     id:int
     user_id: int
     name: str
-    created_date: date
+    created_at: date
 
 class PortfolioUpdate(BaseModel):
     name:str
@@ -25,7 +25,7 @@ class PortfolioPositionUpdateResponse(BaseModel):
     id:int
     type:str
     amount:float
-    currency_id:int
+
 
 class PortfolioPositionCreate(BaseModel):
     portfolio_id: int
@@ -33,5 +33,12 @@ class PortfolioPositionCreate(BaseModel):
     amount: float
     purchase_rate: float
 
+class PortfolioPositionRead(BaseModel):
+    id:int
+    portfolio_id:int
+    currency_id:int
+    amount:float
+    purchase_rate:float
+    purchased_at:datetime
 
 

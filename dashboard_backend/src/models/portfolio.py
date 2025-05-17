@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime, date
 
 from src.database.database import Base
+from src.schemas.portfolio import PortfolioRead, PortfolioPositionRead
 
 
 class Portfolio(Base):
@@ -21,6 +22,14 @@ class Portfolio(Base):
     transactions = relationship("Transaction", back_populates="portfolio")
     portfolio_alerts = relationship("PortfolioAlert",back_populates="portfolio")
 
+    def to_read_model(self) -> PortfolioRead:
+        return PortfolioRead(
+            id=self.id,
+            user_id=self.user_id,
+            name=self.name,
+            created_at=self.created_at,
+        )
+
 
 class PortfolioPosition(Base):
     __tablename__ = "portfolio_positions"
@@ -30,7 +39,17 @@ class PortfolioPosition(Base):
     currency_id: Mapped[int] = mapped_column(ForeignKey("currencies.id"))
     amount: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))
     purchase_rate: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))
-    purchased_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    purchased_at: Mapped[datetime] = mapped_column(default=datetime.now())
 
     portfolio = relationship("Portfolio", back_populates="positions")
     currency = relationship("Currency", back_populates="positions")
+
+    def to_read_model(self) -> PortfolioPositionRead:
+        return PortfolioPositionRead(
+            id=self.id,
+            portfolio_id=self.portfolio_id,
+            currency_id=self.currency_id,
+            amount=self.amount,
+            purchase_rate=self.purchase_rate,
+            purchased_at=self.purchased_at,
+        )

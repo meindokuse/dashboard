@@ -19,11 +19,9 @@ class DateRange(BaseModel):
     end_date: datetime
 
 @router.get("/currencies/{currency_code}/rates/")
-async def get_currency_rates(uow:UOWDep,currency_code: str, date_range: DateRange = Depends()):
-    # Проверяем, существует ли валюта
-
+async def get_currency_rates(uow: UOWDep, currency_code: str, date_range: DateRange = Depends()):
+    """Получить исторические курсы валюты за период с статистикой"""
     currency_service = CurrencyService(uow)
-
     currency = await currency_service.get_by_code(currency_code)
     if not currency:
         raise HTTPException(status_code=404, detail="Currency not found")
@@ -34,11 +32,9 @@ async def get_currency_rates(uow:UOWDep,currency_code: str, date_range: DateRang
     if not rates:
         raise HTTPException(status_code=404, detail="No rates found for this period")
 
-        # Преобразуем данные в список для фронта
     rates_data = [{"timestamp": r.timestamp, "rate": float(r.rate)} for r in rates]
     rates_values = [float(r.rate) for r in rates]
 
-    # Вычисляем статистику
     stats = {
         "median": statistics.median(rates_values) if rates_values else None,
         "mean": statistics.mean(rates_values) if rates_values else None,
@@ -47,7 +43,25 @@ async def get_currency_rates(uow:UOWDep,currency_code: str, date_range: DateRang
 
     return {"rates": rates_data, "statistics": stats}
 
+@router.get('/last_rates')
+async def get_last_rate(uow: UOWDep):
+    """Получить последние курсы всех валют"""
+    rate_service = RateService(uow)
+    currency_service = CurrencyService(uow)
+
+    list_coins = await currency_service.get_currencies()
+    list_codes = [c.code for c in list_coins]
+    data = dict()
+
+    for code in list_codes:
+        currency = await currency_service.get_by_code(code)
+        last_rate = await rate_service.get_last_rate(currency.id)
+        data[code] = last_rate
+
+    return data
+
 def detect_outliers(values: list[float]) -> list[float]:
+    """Обнаружить выбросы в данных (статистическая функция)"""
     if not values:
         return []
     q1 = statistics.quantiles(values, n=4)[0]
@@ -56,6 +70,5 @@ def detect_outliers(values: list[float]) -> list[float]:
     lower_bound = q1 - 1.5 * iqr
     upper_bound = q3 + 1.5 * iqr
     return [v for v in values if v < lower_bound or v > upper_bound]
-
 
 

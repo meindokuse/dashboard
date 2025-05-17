@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from locale import currency
 from typing import Optional
@@ -39,7 +39,7 @@ class ExchangeRate(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     currency_id: Mapped[int] = mapped_column(ForeignKey("currencies.id"))
     rate: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))
-    timestamp: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(default=datetime.now())
     source: Mapped[str] = mapped_column(String(50))
 
     currency = relationship("Currency", back_populates="exchange_rates")

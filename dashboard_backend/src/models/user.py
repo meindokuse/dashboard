@@ -1,15 +1,10 @@
-from typing import Optional
+import uuid
 
 from sqlalchemy import String, Boolean, TIMESTAMP, Time, Column, Integer, ForeignKey, DECIMAL
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from datetime import datetime, time
-from src.schemas.alerts import AlertPortfolioRead, AlertRead
-from src.schemas.portfolio import PortfolioRead
-from src.schemas.transaction import TransactionRead
+from datetime import datetime, time, timezone, timedelta
+
 from src.database.database import Base
-from src.models.alerts import CurrencyAlert
-from src.models.portfolio import Portfolio
-from src.models.transaction import Transaction
 from src.schemas.user import UserRead, UserValidateModel
 
 
@@ -20,12 +15,15 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True)
     email: Mapped[str] = mapped_column(String(100), unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now())
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    telegram_id: Mapped[Optional[str]] = mapped_column(String(50),nullable=True)
-    notification_time: Mapped[Optional[time]] = mapped_column(Time,nullable=True)
-    notification_channel: Mapped[str] = mapped_column(String(10), default="email")
-    balance: Mapped[float] = mapped_column(DECIMAL(10,2), nullable=False,default=10000.0)
+    unique_id: Mapped[str] = mapped_column(
+        String(36),  # или UUID для PostgreSQL
+        unique=True,
+        default=lambda: str(uuid.uuid4())[:6],
+        nullable=False
+    )
+    balance: Mapped[float] = mapped_column(DECIMAL(10,2), nullable=False,default=1000000.0)
 
     # Relationships
     portfolios = relationship("Portfolio",back_populates="user")
@@ -43,9 +41,7 @@ class User(Base):
             email=self.email,
             created_at=self.created_at,
             balance=self.balance,
-            telegram_id=self.telegram_id,
-            notification_time=self.notification_time,
-            notification_channel=self.notification_channel,
+            unique_id=self.unique_id,
         )
     def to_read_model_for_validate(self) -> UserValidateModel:
         return UserValidateModel(
