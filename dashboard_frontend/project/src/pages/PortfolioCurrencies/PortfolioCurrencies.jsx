@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './PortfolioCurrencies.css';
 import { API_CONFIG } from '../../config/config';
-import AlertPortfolio from '../../components/AlertPortfolio/AlertPortfolio'; // Импорт компонента уведомлений
+import AlertPortfolio from '../../components/AlertPortfolio/AlertPortfolio';
 
 const STATIC_CURRENCIES = [
   { id: 1, code: 'BTC', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579' },
@@ -20,6 +20,9 @@ const PortfolioCurrencies = () => {
   const [error, setError] = useState(null);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [actionStates, setActionStates] = useState({});
+  const [currentPage, setCurrentPage] = useState(1); // Текущая страница
+  const [itemsPerPage] = useState(10); // Количество транзакций на странице
+  const [hasNextPage, setHasNextPage] = useState(false); // Есть ли следующая страница
   const { portfolioId } = useParams();
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -177,7 +180,7 @@ const PortfolioCurrencies = () => {
       if (ratesResponse.ok) {
         lastRates = await ratesResponse.json();
       } else {
-        console.warn('Не удалось загрузить курсы монет');
+        console.warn('Не удалось загрузить курсы монет:', ratesResponse.status);
       }
 
       const positionsResponse = await fetch(`${API_CONFIG.BASE_URL}/portfolio/${portfolioId}/portfolio_positions`, {
@@ -206,14 +209,14 @@ const PortfolioCurrencies = () => {
       if (positionsResponse.ok) {
         positionsData = await positionsResponse.json();
       } else {
-        console.warn('Не удалось загрузить позиции портфеля');
+        console.warn('Не удалось загрузить позиции портфеля:', positionsResponse.status);
       }
 
       if (profitResponse.ok) {
         profitData = await profitResponse.json();
         setPortfolioSummary(profitData?.summary || null);
       } else {
-        console.warn('Не удалось загрузить данные о прибыли');
+        console.warn('Не удалось загрузить данные о прибыли:', profitResponse.status);
       }
 
       const userCurrencies = STATIC_CURRENCIES.map((staticCurrency) => {
@@ -243,33 +246,45 @@ const PortfolioCurrencies = () => {
       });
       setCurrencies(userCurrencies);
 
-      const transactionsResponse = await fetch(
-        `${API_CONFIG.BASE_URL}/transaction/transactions?portfolio_id=${portfolioId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'x-session-id': sessionId || '',
-          },
-          credentials: 'include',
-        }
-      );
+      // Запрос транзакций
+      const transactionsUrl = `${API_CONFIG.BASE_URL}/transaction/transactions?portfolio_id=${portfolioId}&page=${currentPage}&limit=${itemsPerPage}`;
+      console.log('Отправка запроса транзакций:', transactionsUrl);
+
+      const transactionsResponse = await fetch(transactionsUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-session-id': sessionId || '',
+        },
+        credentials: 'include',
+      });
 
       if (transactionsResponse.ok) {
         const transactionsData = await transactionsResponse.json();
+        console.log('Ответ сервера (транзакции):', transactionsData);
+
         const fetchedTransactions = Array.isArray(transactionsData)
           ? transactionsData
           : transactionsData.transactions || [];
         setTransactions(fetchedTransactions.reverse());
-      } else if (transactionsResponse.status !== 404) {
-        throw new Error('Ошибка при загрузке транзакций');
-      } else {
+
+        // Проверяем, есть ли следующая страница
+        setHasNextPage(fetchedTransactions.length === itemsPerPage);
+      } else if (transactionsResponse.status === 404) {
+        console.warn('Транзакции не найдены (404)');
         setTransactions([]);
+        setHasNextPage(false);
+      } else {
+        const errorData = await transactionsResponse.json().catch(() => ({}));
+        console.error('Ошибка сервера:', errorData);
+        throw new Error(
+          errorData.message || `Ошибка при загрузке транзакций: ${transactionsResponse.status} ${transactionsResponse.statusText}`
+        );
       }
     } catch (err) {
-      setError(err.message);
-      console.error('Ошибка загрузки данных портфеля:', err);
+      console.error('Полная ошибка в fetchPortfolioData:', err);
+      setError(err.message || 'Неизвестная ошибка при загрузке данных');
     } finally {
       setIsLoading(false);
     }
@@ -277,7 +292,7 @@ const PortfolioCurrencies = () => {
 
   useEffect(() => {
     fetchPortfolioData();
-  }, [portfolioId]);
+  }, [portfolioId, currentPage]);
 
   const TransactionItem = ({ transaction }) => {
     const isBuy = transaction.type.toLowerCase() === 'buy';
@@ -313,6 +328,13 @@ const PortfolioCurrencies = () => {
         </div>
       </div>
     );
+  };
+
+  // Функция для смены страницы
+  const paginate = (pageNumber) => {
+    if (pageNumber >= 1 && (pageNumber === 1 || hasNextPage || pageNumber < currentPage)) {
+      setCurrentPage(pageNumber);
+    }
   };
 
   if (isLoading) {
@@ -354,9 +376,7 @@ const PortfolioCurrencies = () => {
         )}
       </div>
 
-      {showAlertModal
-
- && (
+      {showAlertModal && (
         <AlertPortfolio
           portfolioId={portfolioId}
           onClose={() => setShowAlertModal(false)}
@@ -369,7 +389,7 @@ const PortfolioCurrencies = () => {
             const actionState = actionStates[currency.id] || {};
             const totalCost = actionState.amount
               ? (parseFloat(actionState.amount) * currency.currentPrice).toFixed(2)
-              : '0.00'; // Исправлено: hastag('0.00') → '0.00'
+              : '0.00';
 
             return (
               <div key={currency.id} className="currency-card">
@@ -462,7 +482,28 @@ const PortfolioCurrencies = () => {
         </div>
 
         <div className="transactions-container">
-          <h2>История транзакций</h2>
+          <h2>
+            История транзакций
+            {(hasNextPage || currentPage > 1) && (
+              <div className="pagination">
+                <button
+                  onClick={() => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="pagination-button"
+                >
+                  Предыдущая
+                </button>
+                <span className="pagination-info">Страница {currentPage}</span>
+                <button
+                  onClick={() => paginate(currentPage + 1)}
+                  disabled={!hasNextPage}
+                  className="pagination-button"
+                >
+                  Следующая
+                </button>
+              </div>
+            )}
+          </h2>
           <div className="transactions-list">
             {transactions.length > 0 ? (
               transactions.map((transaction) => (

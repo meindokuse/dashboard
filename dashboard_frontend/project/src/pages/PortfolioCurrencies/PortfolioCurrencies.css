@@ -138,13 +138,16 @@
   z-index: 2;
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
   font-size: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .transactions-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 15px 20px;
+  padding: 10px 20px;
 }
 
 .transaction-item {
@@ -283,26 +286,7 @@
   }
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
-  gap: 8px;
-}
 
-.pagination-button {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  background-color: #fff;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.pagination-button:hover:not(:disabled) {
-  background-color: #f0f0f0;
-}
 
 .pagination-button.active {
   background-color: #007bff;
@@ -310,10 +294,6 @@
   border-color: #007bff;
 }
 
-.pagination-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
 
 /* Стили для формы действия */
 .action-form {
@@ -383,4 +363,45 @@
   font-size: 1.2rem;
   font-weight: 700;
   font-family: 'Helvetica Neue', Arial, sans-serif; /* Example of a bolder font */
+}
+
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+.pagination-button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.pagination-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #333;
+}
+
+.transactions-container .pagination {
+  margin-top: 0;
+}
+
+
+.transactions-container h2 .pagination {
+  margin-left: auto;
+  gap: 10px;
 }
