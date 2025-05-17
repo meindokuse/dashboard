@@ -210,3 +210,14 @@ class PortfolioService:
             await self.uow.transaction.add_one(transaction_data)
             await self.uow.commit()
             return position.id
+
+    async def delete_portfolio_position(self,portfolio_id: int, user_id: int):
+        async with self.uow:
+            data = await self.calculate_portfolio_summary(portfolio_id)
+            total = data['summary']['total_current_value']
+            await self.uow.portfolio.delete_one(id=portfolio_id)
+            
+            user = await self.uow.user.find_one(id=user_id)
+            new_balance = user.balance + float(total)
+            await self.uow.user.update_balance(user_id, new_balance)
+            await self.uow.commit()

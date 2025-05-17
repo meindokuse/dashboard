@@ -7,37 +7,30 @@ from src.models.transaction import Transaction
 class TransactionRepository(SQLAlchemyRepository):
     model = Transaction
 
-    async def find_all_with_time_sort(
+    async def get_latest_records(
             self,
             page: int,
             limit: int,
-            time_column: str = "created_at",
             **filter_by
     ):
         """
-        Получить записи с фильтрацией, пагинацией и сортировкой по времени
+        Получить записи с пагинацией, отсортированные по timestamp (новые первые)
 
         Args:
             page: Номер страницы (начинается с 1)
-            limit: Количество записей на странице (0 - без пагинации)
-            time_column: Название колонки с временем для сортировки
-            descending: Сортировка по убыванию (новые записи первыми)
-            filter_by: Параметры фильтрации
+            limit: Количество записей на странице
+            filter_by: Параметры фильтрации (например, user_id=1)
 
         Returns:
-            Список DTO моделей, отсортированных по времени
+            Список DTO моделей, отсортированных от новых к старым
         """
+        stmt = (
+            select(self.model)
+            .filter_by(**filter_by)
+            .order_by(self.model.timestamp.desc())
+            .offset((page - 1) * limit)
+            .limit(limit)
+        )
 
-        stmt = select(self.model).filter_by(**filter_by)
-
-        time_attr = getattr(self.model, time_column)
-
-        stmt = stmt.order_by(time_attr.desc())
-
-        if limit > 0:
-            start = (page - 1) * limit
-            stmt = stmt.offset(start).limit(limit)
-
-        # Выполняем запрос
-        res = await self.session.execute(stmt)
-        return [row[0].to_read_model() for row in res.all()]
+        result = await self.session.execute(stmt)
+        return [row[0].to_read_model() for row in result.all()]

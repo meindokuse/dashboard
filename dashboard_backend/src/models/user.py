@@ -18,17 +18,28 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.now())
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     unique_id: Mapped[str] = mapped_column(
-        String(36),  # или UUID для PostgreSQL
+        String(36),
         unique=True,
         default=lambda: str(uuid.uuid4())[:6],
         nullable=False
     )
     balance: Mapped[float] = mapped_column(DECIMAL(10,2), nullable=False,default=1000000.0)
 
-    # Relationships
-    portfolios = relationship("Portfolio",back_populates="user")
-    transactions = relationship("Transaction",back_populates="user")
-    alerts = relationship("CurrencyAlert",back_populates="user")
+    portfolios = relationship(
+        "Portfolio",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    transactions = relationship(
+        "Transaction",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    alerts = relationship(
+        "CurrencyAlert",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
     portfolio_alerts = relationship(
         "PortfolioAlert",
         back_populates="user",
@@ -51,13 +62,3 @@ class User(Base):
             password_hash=self.password_hash,
         )
 
-#
-# class UserBalance(Base):
-#     __tablename__ = "user_balance"
-#
-#     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
-#     balance: Mapped[float] = mapped_column(DECIMAL(20, 2), default=10000.00)
-#     last_updated: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
-#
-#     # Relationships
-#     user = relationship("User", back_populates="balance")

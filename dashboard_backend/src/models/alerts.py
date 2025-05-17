@@ -36,8 +36,8 @@ class PortfolioAlert(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    portfolio_id: Mapped[int] = mapped_column(ForeignKey("portfolios.id"))
-    threshold: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(10, 4))  # Порог изменения (5% = 0.05)
+    portfolio_id: Mapped[int] = mapped_column(ForeignKey("portfolios.id", ondelete="CASCADE"))
+    threshold: Mapped[Optional[Decimal]] = mapped_column(DECIMAL(10, 4))
     is_active: Mapped[bool] = mapped_column(default=True)
     notification_channel: Mapped[str] = mapped_column(String(10), default="email")
 

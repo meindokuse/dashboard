@@ -4,8 +4,8 @@ from celery.schedules import crontab
 
 celery_app = Celery(
     "tasks",
-    broker=CELERY_BROKER_URL,  # Например, "redis://localhost:6379/0"
-    backend=CELERY_RESULT_BACKEND,  # Например, "redis://localhost:6379/1"
+    broker=CELERY_BROKER_URL,
+    backend=CELERY_RESULT_BACKEND,
     include=[
         "src.tasks.auth_tasks",
         "src.tasks.currency_tasks",
@@ -31,8 +31,8 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(minute="*/5"),
     },
     "send_currency_alerts": {
-            "task": "src.tasks.currency_alert_tasks.send_hourly_currency_alerts",
-            "schedule": crontab(hour="*/1"),
-        },
+        "task": "src.tasks.currency_alert_tasks.send_hourly_currency_alerts",
+        "schedule": crontab(hour="*", minute="0"),
+    },
 
 }

@@ -27,6 +27,7 @@ async def portfolios(page: int, limit: int, user_id: session_dep, uow: UOWDep):
     list_portfolios = await portfolio_service.get_portfolios(int(user_id), page, limit)
     return list_portfolios
 
+
 @router.post('/create')
 async def create_portfolio(name: str, user_id: session_dep, uow: UOWDep):
     """Создать новый портфель для пользователя"""
@@ -37,6 +38,7 @@ async def create_portfolio(name: str, user_id: session_dep, uow: UOWDep):
     portfolio_service = PortfolioService(uow)
     id = await portfolio_service.create_portfolio(portfolio)
     return id
+
 
 @router.post('/create_position')
 async def create_portfolio_position(portfolio: PortfolioPositionCreateResponse, uow: UOWDep, user_id: session_dep):
@@ -65,12 +67,14 @@ async def create_portfolio_position(portfolio: PortfolioPositionCreateResponse, 
     id = await portfolio_service.create_portfolio_position(transaction, portfolio_create, int(user_id))
     return id
 
+
 @router.put('/update_position')
 async def update_position(portfolio_update: PortfolioPositionUpdateResponse, uow: UOWDep, user_id: session_dep):
     """Обновить данные позиции в портфеле"""
     portfolio_service = PortfolioService(uow)
     id = await portfolio_service.update_portfolio_position(portfolio_update, int(user_id))
     return id
+
 
 @router.get('/{portfolio_id}/portfolio_positions')
 async def get_portfolio_positions(uow: UOWDep, portfolio_id: int):
@@ -79,6 +83,7 @@ async def get_portfolio_positions(uow: UOWDep, portfolio_id: int):
     portfolio_positions = await portfolio_service.get_portfolio_positions(portfolio_id)
     return portfolio_positions
 
+
 @router.get('/position_profit')
 async def get_position_profit(uow: UOWDep, portfolio_id: int):
     """Рассчитать прибыль по позициям портфеля"""
@@ -86,12 +91,14 @@ async def get_position_profit(uow: UOWDep, portfolio_id: int):
     profit = await portfolio_service.calculate_profits(portfolio_id)
     return profit
 
+
 @router.get('/portfolio_profit')
 async def get_portfolio_profit(uow: UOWDep, portfolio_id: int):
     """Рассчитать общую прибыль портфеля"""
     portfolio_service = PortfolioService(uow)
     profit = await portfolio_service.calculate_portfolio_summary(portfolio_id)
     return profit
+
 
 @router.post('/create_alert')
 async def create_alert(uow: UOWDep, alert: AlertPortfolioResponse, user_id: session_dep):
@@ -106,12 +113,14 @@ async def create_alert(uow: UOWDep, alert: AlertPortfolioResponse, user_id: sess
     id = await portfolio_alert_service.create_alert(alert_create)
     return id
 
+
 @router.put('/update_alert')
 async def update_alert(uow: UOWDep, alert: AlertPortfolioUpdate):
     """Обновить параметры уведомления портфеля"""
     portfolio_alert_service = PortfolioAlertService(uow)
     id = await portfolio_alert_service.update_alert(alert)
     return id
+
 
 @router.get('/alerts')
 async def get_alerts(uow: UOWDep, portfolio_id: int):
@@ -121,4 +130,8 @@ async def get_alerts(uow: UOWDep, portfolio_id: int):
     return alert
 
 
-
+@router.delete('/delete_portfolio')
+async def delete_portfolio(uow: UOWDep, portfolio_id: int, user_id: session_dep):
+    """Получить уведомления для портфеля"""
+    portfolio_service = PortfolioService(uow)
+    await portfolio_service.delete_portfolio_position(portfolio_id, int(user_id))

@@ -9,6 +9,6 @@ class TransactionService:
     async def get_transactions(self,portfolio_id:int,page:int,limit:int):
         """Получение списка тразакций для портфеля"""
         async with self.uow:
-            list_transactions = await self.uow.transaction.find_all(page=page,limit=10,portfolio_id=portfolio_id)
+            list_transactions = await self.uow.transaction.get_latest_records(page=page,limit=limit,portfolio_id=portfolio_id)
             return list_transactions
 

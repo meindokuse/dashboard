@@ -14,13 +14,12 @@ class Transaction(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     currency_id: Mapped[int] = mapped_column(ForeignKey("currencies.id"))
-    type: Mapped[Literal["buy", "sell"]] = mapped_column(String(4))  # Тип операции
-    amount: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))  # Количество
-    rate: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))  # Курс на момент сделки
+    type: Mapped[Literal["buy", "sell"]] = mapped_column(String(4))
+    amount: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))
+    rate: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))
     timestamp: Mapped[datetime] = mapped_column(default=datetime.now())
-    portfolio_id: Mapped[Optional[int]] = mapped_column(ForeignKey("portfolios.id"))
+    portfolio_id: Mapped[Optional[int]] = mapped_column(ForeignKey("portfolios.id", ondelete="CASCADE"))
 
-    # Relationships
     user = relationship("User", back_populates="transactions")
     currency = relationship("Currency", back_populates="transactions")
     portfolio = relationship("Portfolio", back_populates="transactions")

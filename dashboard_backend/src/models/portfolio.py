@@ -19,8 +19,8 @@ class Portfolio(Base):
 
     user = relationship("User", back_populates="portfolios")
     positions = relationship("PortfolioPosition", back_populates="portfolio", cascade="all, delete-orphan")
-    transactions = relationship("Transaction", back_populates="portfolio")
-    portfolio_alerts = relationship("PortfolioAlert",back_populates="portfolio")
+    transactions = relationship("Transaction", back_populates="portfolio", cascade="all, delete-orphan")
+    portfolio_alerts = relationship("PortfolioAlert",back_populates="portfolio", cascade="all, delete-orphan")
 
     def to_read_model(self) -> PortfolioRead:
         return PortfolioRead(
@@ -35,7 +35,7 @@ class PortfolioPosition(Base):
     __tablename__ = "portfolio_positions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    portfolio_id: Mapped[int] = mapped_column(ForeignKey("portfolios.id"))
+    portfolio_id: Mapped[int] = mapped_column(ForeignKey("portfolios.id", ondelete="CASCADE"))
     currency_id: Mapped[int] = mapped_column(ForeignKey("currencies.id"))
     amount: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))
     purchase_rate: Mapped[Decimal] = mapped_column(DECIMAL(20, 8))
