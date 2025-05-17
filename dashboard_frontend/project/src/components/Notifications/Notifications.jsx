@@ -12,7 +12,7 @@ const CURRENCY_OPTIONS = [
 const Notifications = ({ user, onUpdate }) => {
   const [showModal, setShowModal] = useState(false);
   const [notificationChannel, setNotificationChannel] = useState('email');
-  const [hour, setHour] = useState('');
+  const [hour, setHour] = useState(''); // Store hour as string for input
   const [currency, setCurrency] = useState('');
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +43,7 @@ const Notifications = ({ user, onUpdate }) => {
       onUpdate({ hasAlerts: !!data });
       if (data) {
         setNotificationChannel(data.notification_channel || 'email');
+        // Extract hour from notification_time (e.g., "14:00:00" -> "14")
         setHour(data.notification_time ? data.notification_time.split(':')[0] : '');
         setCurrency(data.currency_id?.toString() || '');
         setIsActive(data.is_active !== undefined ? data.is_active : true);
@@ -108,7 +109,7 @@ const Notifications = ({ user, onUpdate }) => {
         throw new Error('Ошибка при изменении статуса уведомления');
       }
 
-      await fetchAlert(); // Повторно загружаем данные после изменения статуса
+      await fetchAlert();
     } catch (err) {
       setError(err.message);
     }
@@ -126,7 +127,7 @@ const Notifications = ({ user, onUpdate }) => {
       const sessionId = localStorage.getItem('session_id');
       const requestBody = {
         currency_id: parseInt(currency),
-        notification_time: `${hour}:00:00`,
+        notification_time: `${hour.padStart(2, '0')}:00:00`, // Format as HH:00:00
         notification_channel: notificationChannel,
         is_active: isActive,
       };
@@ -154,7 +155,7 @@ const Notifications = ({ user, onUpdate }) => {
         throw new Error(errorData.message || 'Ошибка при сохранении уведомления');
       }
 
-      await fetchAlert(); // Повторно загружаем данные после сохранения
+      await fetchAlert();
 
       if (notificationChannel === 'telegram') {
         setSuccessMessage('Настройки сохранены! Теперь перейдите в бота для завершения настройки.');
@@ -198,7 +199,7 @@ const Notifications = ({ user, onUpdate }) => {
               <p>
                 <strong>Время уведомления:</strong>
                 <span>
-                  {alert.notification_time && typeof alert.notification_time === 'string'
+                  {alert.notification_time
                     ? `${alert.notification_time.split(':')[0]}:00`
                     : 'Не указано'}
                 </span>
@@ -268,11 +269,15 @@ const Notifications = ({ user, onUpdate }) => {
                   max="23"
                   value={hour}
                   onChange={(e) => {
-                    let value = parseInt(e.target.value);
-                    if (isNaN(value)) value = '';
+                    let value = e.target.value;
+                    if (value === '') {
+                      setHour('');
+                      return;
+                    }
+                    value = parseInt(value);
                     if (value < 0) value = 0;
                     if (value > 23) value = 23;
-                    setHour(value);
+                    setHour(value.toString());
                   }}
                   required
                   placeholder="Час (0-23)"
