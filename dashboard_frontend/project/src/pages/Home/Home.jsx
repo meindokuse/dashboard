@@ -1,30 +1,17 @@
-import React, { useState, useEffect } from 'react'
+// Home.jsx (только статика для валют)
+import React from 'react'
 import './Home.css'
 import CurrencyCard from '../../components/CurrencyCard/CurrencyCard'
-import { API_CONFIG } from '../../config/config'
+
+// Статические данные валют
+const STATIC_CURRENCIES = [
+  { id: 1, code: "BTC", name: "Bitcoin",image:'https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579' },
+  { id: 2, code: "SOL", name: "Solana",image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png?1640133422'},
+  { id: 3, code: "ETH", name: "Ethereum",image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png?1595348880' },
+  { id: 4, code: "TON", name: "Toncoin",image: 'https://assets.coingecko.com/coins/images/17980/large/ton_symbol.png?1670498136' }
+];
 
 const Home = () => {
-  const [currencies, setCurrencies] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCurrencies = async () => {
-      try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/currencies/currencies/`);
-        const data = await response.json();
-        setCurrencies(data);
-      } catch (err) {
-        console.error('Ошибка загрузки валют:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCurrencies();
-  }, []);
-
-  if (loading) return <div>Загрузка...</div>;
-
   return (
     <div className='home'>
       <div className='hero'>
@@ -36,13 +23,14 @@ const Home = () => {
         </form>
       </div>
       <div className='currency-grid'>
-        {currencies.map((currency) => (
+        {STATIC_CURRENCIES.map((currency) => (
           <CurrencyCard 
             key={currency.id}
             coin={{ 
               id: currency.id,
               name: currency.name,
-              symbol: currency.code,
+              code: currency.code,
+              image: currency.image
             }} 
           />
         ))}

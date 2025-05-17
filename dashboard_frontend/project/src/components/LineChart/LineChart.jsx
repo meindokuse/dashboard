@@ -5,8 +5,8 @@ import { API_CONFIG } from '../../config/config';
 import { useParams } from "react-router-dom";
 
 const COLOR_SCHEMES = {
-  default: ['#3366cc', '#dc3912', '#ff9900'],
-  colorblind: ['#000000', '#E69F00', '#56B4E9']
+  default: ['#3366cc', '#dc3912', '#ff9900', '#FF0000'],
+  colorblind: ['#000000', '#E69F00', '#56B4E9', '#FF0000']
 };
 
 const getRangeTitle = (range) => {
@@ -20,29 +20,56 @@ const getRangeTitle = (range) => {
 };
 
 const calculateDateRange = (range) => {
-  const now = new Date();
+  const now = new Date(); // Локальное время пользователя
   const ranges = {
-    '1h': () => new Date(now.getTime() - 60 * 60 * 1000),
-    '1d': () => new Date(now.getTime() - 24 * 60 * 60 * 1000),
+    '1h': () => new Date(now - 60 * 60 * 1000),
+    '1d': () => new Date(now - 24 * 60 * 60 * 1000),
     '1m': () => new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()),
     '1y': () => new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
   };
-  return { start: ranges[range](), end: now };
+  return { 
+    start: ranges[range](), 
+    end: now 
+  };
 };
 
-const processData = (apiData, stats) => {
-  const header = ['Время', 'Цена', 'Среднее', 'Медиана'];
-  const data = [header];
+// Определение формата времени в зависимости от диапазона
+const getTimeFormat = (range) => {
+  switch (range) {
+    case '1h':
+    case '1d':
+      return 'HH:mm';
+    case '1m':
+      return 'dd.MM.yyyy';
+    case '1y':
+      return 'MM.yyyy';
+    default:
+      return 'dd.MM.yyyy HH:mm';
+  }
+};
+
+const processData = (rates, stats) => {
+  const header = [
+    { type: 'date', label: 'Время' },
+    { type: 'number', label: 'Цена' },
+    { type: 'number', label: 'Среднее' },
+    { type: 'number', label: 'Медиана' },
+    { type: 'number', label: 'Выбросы' }
+  ];
   
-  apiData.forEach(item => {
+  const data = [header];
+  const outliers = new Set(stats?.outliers?.map(Number) || []);
+
+  rates?.forEach(item => {
     data.push([
-      item.timestamp,
-      item.rate,
-      stats.mean,
-      stats.median
+      new Date(item.timestamp),
+      Number(item.rate),
+      Number(stats?.mean || 0),
+      Number(stats?.median || 0),
+      outliers.has(Number(item.rate)) ? Number(item.rate) : null
     ]);
   });
-  
+
   return data;
 };
 
@@ -60,28 +87,32 @@ export default function LineChart() {
         setLoading(true);
         const { start, end } = calculateDateRange(timeRange);
         
-        const url = new URL(
-          API_CONFIG.ENDPOINTS.CURRENCY_RATES(coinId), 
-          API_CONFIG.BASE_URL
+        // Конвертируем локальное время в UTC
+        const toUTC = (date) => new Date(
+          Date.UTC(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate(),
+            date.getHours(),
+            date.getMinutes(),
+            date.getSeconds()
+          )
         );
-        
-        url.searchParams.set('start_date', start.toISOString());
-        url.searchParams.set('end_date', end.toISOString());
     
-        const response = await fetch(url);
-        
-        if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
-
-        const responseData = await response.json();
-        
-        const processedData = processData(
-          responseData.rates,
-          responseData.statistics
+        const url = new URL(
+          `${API_CONFIG.BASE_URL}/rate/currencies/${coinId}/rates/`
         );
         
-        setChartData(processedData);
+        url.searchParams.set('start_date', toUTC(start).toISOString());
+        url.searchParams.set('end_date', toUTC(end).toISOString());
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Ошибка: ${response.status}`);
+        
+        const { rates, statistics } = await response.json();
+        setChartData(processData(rates, statistics));
       } catch (err) {
-        setError(err.message || 'Ошибка загрузки данных');
+        setError(err.message);
         setChartData([]);
       } finally {
         setLoading(false);
@@ -93,16 +124,70 @@ export default function LineChart() {
 
   const options = {
     title: `Динамика цены за ${getRangeTitle(timeRange)}`,
-    curveType: "function",
+    seriesType: 'line',
     legend: { position: "bottom" },
-    series: {
-      0: { color: COLOR_SCHEMES[colorScheme][0], lineWidth: 2 },
-      1: { color: COLOR_SCHEMES[colorScheme][1], lineDashStyle: [4, 4] },
-      2: { color: COLOR_SCHEMES[colorScheme][2], lineDashStyle: [2, 2] }
+    explorer: {
+      actions: ['dragToZoom', 'rightClickToReset'],
+      axis: 'horizontal',
+      keepInBounds: true
     },
-    hAxis: { title: 'Время' },
-    vAxis: { title: 'Цена', minValue: 0 },
-    chartArea: { width: '85%', height: '70%' }
+    series: {
+      0: { 
+        type: 'line',
+        color: COLOR_SCHEMES[colorScheme][0], 
+        lineWidth: 2,
+        targetAxisIndex: 0
+      },
+      1: { 
+        type: 'line',
+        color: COLOR_SCHEMES[colorScheme][1], 
+        lineDashStyle: [4, 4],
+        targetAxisIndex: 0
+      },
+      2: { 
+        type: 'line',
+        color: COLOR_SCHEMES[colorScheme][2], 
+        lineDashStyle: [2, 2],
+        targetAxisIndex: 0
+      },
+      3: { 
+        type: 'scatter',
+        color: COLOR_SCHEMES[colorScheme][3],
+        pointSize: 6,
+        targetAxisIndex: 0
+      }
+    },
+    hAxis: { 
+      title: 'Время',
+      format: getTimeFormat(timeRange), // Динамический формат
+      gridlines: { count: -1 }
+    },
+    vAxes: {
+      0: { 
+        title: 'Цена (RUB)', 
+        minValue: 0,
+        format: '####.##'
+      }
+    },
+    chartArea: {
+      left: 90,
+      top: 40,    
+      bottom: 60, 
+      width: '85%', 
+      height: '70%' 
+    },
+    explorer: {
+      actions: ['dragToZoom', 'rightClickToReset'],
+      axis: 'horizontal',
+      keepInBounds: false, // Разрешаем выход за пределы данных
+      maxZoomIn: 0.1,     // Максимальное приближение
+      maxZoomOut: 10,     // Максимальное отдаление
+      zoomDelta: 1.5      // Чувствительность зума
+    },
+    crosshair: {
+      color: '#000',      // Линия при наведении
+      orientation: 'both' // Вертикальная+горизонтальная
+    }
   };
 
   return (
@@ -132,9 +217,9 @@ export default function LineChart() {
       {loading && <div className="loading">Загрузка...</div>}
       {error && <div className="error">{error}</div>}
       
-      {!loading && !error && chartData.length > 0 && (
+      {!loading && !error && chartData.length > 1 && (
         <Chart
-          chartType="LineChart"
+          chartType="ComboChart"
           width="100%"
           height="500px"
           data={chartData}

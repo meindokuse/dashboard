@@ -1,152 +1,348 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import './PortfolioCurrencies.css';
-import { mockProfileData } from '../../data/mockProfile';
-import { mockCase } from '../../data/mockCase';
+import { API_CONFIG } from '../../config/config';
+import AlertPortfolio from '../../components/AlertPortfolio/AlertPortfolio';
 
-// Исправленные пути импортов (предполагаем, что assets находится в src/assets)
-import euroImage from '../../assets/euro.png';
-import yuanImage from '../../assets/yuan.png';
-import dollarImage from '../../assets/dollar.png';
-import bitcoinImage from '../../assets/bitcoin.png';
-import defaultCurrencyImage from '../../assets/default-currency.png';
-
-const CurrencyCard = ({ currency, onBuyClick }) => {
-  if (!currency || !currency.amount) {
-    return (
-      <div className="currency-card">
-        <img src={currency?.image || defaultCurrencyImage} alt={currency?.name || 'Валюта'} className="currency-image" />
-        <h3>{currency?.name || 'Валюта'}</h3>
-        <p>У вас нет этой валюты</p>
-        <button 
-          className="buy-button"
-          onClick={() => onBuyClick(currency?.symbol || '')}
-        >
-          Купить
-        </button>
-      </div>
-    );
-  }
-
-  const profit = (currency.currentPrice - currency.buyPrice) * currency.amount;
-  const profitPercentage = ((currency.currentPrice - currency.buyPrice) / currency.buyPrice) * 100;
-
-  return (
-    <div className="currency-card">
-      <img src={currency.image} alt={currency.name} className="currency-image" />
-      <h3>{currency.name}</h3>
-      <p>Количество: {currency.amount}</p>
-      <p>Цена за 1: ${currency.buyPrice.toFixed(2)}</p>
-      <p>Текущая цена: ${currency.currentPrice.toFixed(2)}</p>
-      <p className={profit >= 0 ? 'profit' : 'loss'}>
-        {profit >= 0 ? 'Прибыль' : 'Убыток'}: ${Math.abs(profit).toFixed(2)} ({profitPercentage.toFixed(2)}%)
-      </p>
-    </div>
-  );
-};
-
-const TransactionItem = ({ transaction }) => {
-  const isBuy = transaction.type.toLowerCase() === 'покупка';
-  const transactionClass = isBuy ? 'transaction-item buy' : 'transaction-item sell';
-  
-  return (
-    <div className={transactionClass}>
-      <div className="transaction-header">
-        <span className={`transaction-type ${isBuy ? 'buy' : 'sell'}`}>
-          {transaction.type}
-        </span>
-        <span className="transaction-date">{transaction.date}</span>
-      </div>
-      <div className="transaction-details">
-        <div className="transaction-detail">
-          <span className="transaction-detail-label">Валюта</span>
-          <span className="transaction-detail-value">{transaction.currency}</span>
-        </div>
-        <div className="transaction-detail">
-          <span className="transaction-detail-label">Количество</span>
-          <span className="transaction-detail-value">{transaction.amount} шт.</span>
-        </div>
-        <div className="transaction-detail">
-          <span className="transaction-detail-label">Цена</span>
-          <span className="transaction-detail-value">${transaction.price.toFixed(2)}</span>
-        </div>
-        <div className="transaction-detail">
-          <span className="transaction-detail-label">Сумма</span>
-          <span className="transaction-detail-value">${transaction.total.toFixed(2)}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
+const STATIC_CURRENCIES = [
+  { id: 1, code: 'BTC', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579' },
+  { id: 2, code: 'SOL', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png?1640133422' },
+  { id: 3, code: 'ETH', name: 'Ethereum', image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png?1595348880' },
+  { id: 4, code: 'TON', name: 'Toncoin', image: 'https://assets.coingecko.com/coins/images/17980/large/ton_symbol.png?1670498136' },
+];
 
 const PortfolioCurrencies = () => {
   const [currencies, setCurrencies] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [portfolio, setPortfolio] = useState(null);
+  const [portfolioSummary, setPortfolioSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [error, setError] = useState(null);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [actionStates, setActionStates] = useState({});
+  const [currentPage, setCurrentPage] = useState(1); // Текущая страница
+  const [itemsPerPage] = useState(10); // Количество транзакций на странице
+  const [hasNextPage, setHasNextPage] = useState(false); // Есть ли следующая страница
   const { portfolioId } = useParams();
+  const { state } = useLocation();
+  const navigate = useNavigate();
+  const portfolioName = state?.portfolioName || `Портфель ${portfolioId}`;
 
-  const handleBuyClick = (currencySymbol) => {
-    console.log(`Покупка ${currencySymbol} для портфеля ${portfolioId}`);
-    navigate(`/buy/${currencySymbol}?portfolio=${portfolioId}`);
+  const handleActionClick = (currencyId, selectedAction) => {
+    setActionStates((prev) => ({
+      ...prev,
+      [currencyId]: {
+        ...prev[currencyId],
+        action: prev[currencyId]?.action === selectedAction ? null : selectedAction,
+        amount: '',
+        error: null,
+      },
+    }));
+  };
+
+  const handleAmountChange = (currencyId, value) => {
+    if (value === '' || (parseFloat(value) > -0.9999 && !isNaN(value))) {
+      setActionStates((prev) => ({
+        ...prev,
+        [currencyId]: {
+          ...prev[currencyId],
+          amount: value,
+          error: null,
+        },
+      }));
+    } else {
+      setActionStates((prev) => ({
+        ...prev,
+        [currencyId]: {
+          ...prev[currencyId],
+          error: 'Введите корректное количество',
+        },
+      }));
+    }
+  };
+
+  const handleSubmit = async (currency, action, amount) => {
+    if (!amount || parseFloat(amount) <= 0) {
+      setActionStates((prev) => ({
+        ...prev,
+        [currency.id]: {
+          ...prev[currency.id],
+          error: 'Введите корректное количество',
+        },
+      }));
+      return;
+    }
+
+    if (action === 'sell' && parseFloat(amount) > currency.amount) {
+      setActionStates((prev) => ({
+        ...prev,
+        [currency.id]: {
+          ...prev[currency.id],
+          error: 'Нельзя продать больше, чем имеется',
+        },
+      }));
+      return;
+    }
+
+    setActionStates((prev) => ({
+      ...prev,
+      [currency.id]: {
+        ...prev[currency.id],
+        isSubmitting: true,
+      },
+    }));
+
+    try {
+      const sessionId = localStorage.getItem('session_id');
+      let url, method, body;
+
+      if (!currency.isPurchased && action === 'buy') {
+        url = `${API_CONFIG.BASE_URL}/portfolio/create_position`;
+        method = 'POST';
+        body = {
+          portfolio_id: parseInt(portfolioId),
+          currency_id: currency.id,
+          amount: parseFloat(amount),
+        };
+      } else {
+        url = `${API_CONFIG.BASE_URL}/portfolio/update_position`;
+        method = 'PUT';
+        body = {
+          id: currency.positionId,
+          type: action,
+          amount: parseFloat(amount),
+        };
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-session-id': sessionId || '',
+        },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Ошибка ${response.status}: ${response.statusText}`);
+      }
+
+      setActionStates((prev) => ({
+        ...prev,
+        [currency.id]: {
+          action: null,
+          amount: '',
+          error: null,
+          isSubmitting: false,
+        },
+      }));
+      await fetchPortfolioData();
+    } catch (err) {
+      setActionStates((prev) => ({
+        ...prev,
+        [currency.id]: {
+          ...prev[currency.id],
+          error: err.message,
+          isSubmitting: false,
+        },
+      }));
+    }
+  };
+
+  const handleLogoClick = (coinCode) => {
+    navigate(`/coin/${coinCode}`);
+  };
+
+  const fetchPortfolioData = async () => {
+    try {
+      setIsLoading(true);
+      const sessionId = localStorage.getItem('session_id');
+
+      setPortfolio({
+        id: portfolioId,
+        name: portfolioName,
+      });
+
+      const ratesResponse = await fetch(`${API_CONFIG.BASE_URL}/rate/last_rates`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-session-id': sessionId || '',
+        },
+        credentials: 'include',
+      });
+
+      let lastRates = {};
+      if (ratesResponse.ok) {
+        lastRates = await ratesResponse.json();
+      } else {
+        console.warn('Не удалось загрузить курсы монет:', ratesResponse.status);
+      }
+
+      const positionsResponse = await fetch(`${API_CONFIG.BASE_URL}/portfolio/${portfolioId}/portfolio_positions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-session-id': sessionId || '',
+        },
+        credentials: 'include',
+      });
+
+      const profitResponse = await fetch(`${API_CONFIG.BASE_URL}/portfolio/portfolio_profit?portfolio_id=${portfolioId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-session-id': sessionId || '',
+        },
+        credentials: 'include',
+      });
+
+      let positionsData = [];
+      let profitData = null;
+
+      if (positionsResponse.ok) {
+        positionsData = await positionsResponse.json();
+      } else {
+        console.warn('Не удалось загрузить позиции портфеля:', positionsResponse.status);
+      }
+
+      if (profitResponse.ok) {
+        profitData = await profitResponse.json();
+        setPortfolioSummary(profitData?.summary || null);
+      } else {
+        console.warn('Не удалось загрузить данные о прибыли:', profitResponse.status);
+      }
+
+      const userCurrencies = STATIC_CURRENCIES.map((staticCurrency) => {
+        const position = positionsData.find((p) => p.currency_id === staticCurrency.id);
+        const profitPosition = profitData?.positions?.find((p) => p.currency === staticCurrency.code);
+        const currentRate = lastRates[staticCurrency.code] || 0;
+
+        if (position && profitPosition) {
+          return {
+            ...staticCurrency,
+            amount: position.amount,
+            currentValue: profitPosition.current_value,
+            profitPercentage: profitPosition.profit_percent,
+            isPurchased: true,
+            positionId: position.id,
+            currentPrice: currentRate || profitPosition.current_value / position.amount || 0,
+          };
+        }
+        return {
+          ...staticCurrency,
+          amount: 0,
+          currentValue: 0,
+          profitPercentage: 0,
+          isPurchased: false,
+          currentPrice: currentRate,
+        };
+      });
+      setCurrencies(userCurrencies);
+
+      // Запрос транзакций
+      const transactionsUrl = `${API_CONFIG.BASE_URL}/transaction/transactions?portfolio_id=${portfolioId}&page=${currentPage}&limit=${itemsPerPage}`;
+      console.log('Отправка запроса транзакций:', transactionsUrl);
+
+      const transactionsResponse = await fetch(transactionsUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-session-id': sessionId || '',
+        },
+        credentials: 'include',
+      });
+
+      if (transactionsResponse.ok) {
+        const transactionsData = await transactionsResponse.json();
+        console.log('Ответ сервера (транзакции):', transactionsData);
+
+        const fetchedTransactions = Array.isArray(transactionsData)
+          ? transactionsData
+          : transactionsData.transactions || [];
+        setTransactions(fetchedTransactions.reverse());
+
+        // Проверяем, есть ли следующая страница
+        setHasNextPage(fetchedTransactions.length === itemsPerPage);
+      } else if (transactionsResponse.status === 404) {
+        console.warn('Транзакции не найдены (404)');
+        setTransactions([]);
+        setHasNextPage(false);
+      } else {
+        const errorData = await transactionsResponse.json().catch(() => ({}));
+        console.error('Ошибка сервера:', errorData);
+        throw new Error(
+          errorData.message || `Ошибка при загрузке транзакций: ${transactionsResponse.status} ${transactionsResponse.statusText}`
+        );
+      }
+    } catch (err) {
+      console.error('Полная ошибка в fetchPortfolioData:', err);
+      setError(err.message || 'Неизвестная ошибка при загрузке данных');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
-    setIsLoading(true);
-    
-    const portfolioData = mockProfileData.portfolios.find(p => p.id.toString() === portfolioId);
-    setPortfolio(portfolioData || { id: portfolioId, name: `Портфель ${portfolioId}` });
+    fetchPortfolioData();
+  }, [portfolioId, currentPage]);
 
-    const caseData = mockCase.find(c => c.portfolioId === portfolioId) || { userCurrencies: [], transactions: [] };
+  const TransactionItem = ({ transaction }) => {
+    const isBuy = transaction.type.toLowerCase() === 'buy';
+    const transactionClass = isBuy ? 'transaction-item buy' : 'transaction-item sell';
+    const currency = STATIC_CURRENCIES.find((c) => c.id === transaction.currency_id);
+    const formattedDate = new Date(transaction.timestamp).toLocaleString('ru-RU');
 
-    // Создаем объект для соответствия символов валют и их изображений
-    const currencyImages = {
-      'USD': dollarImage,
-      'EUR': euroImage,
-      'CNY': yuanImage,
-      'BTC': bitcoinImage
-    };
+    return (
+      <div className={transactionClass}>
+        <div className="transaction-header">
+          <span className={`transaction-type ${isBuy ? 'buy' : 'sell'}`}>
+            {isBuy ? 'Покупка' : 'Продажа'}
+          </span>
+          <span className="transaction-date">{formattedDate}</span>
+        </div>
+        <div className="transaction-details">
+          <div className="transaction-detail">
+            <span className="transaction-detail-label">Валюта</span>
+            <span className="transaction-detail-value">{currency?.name || 'Неизвестно'}</span>
+          </div>
+          <div className="transaction-detail">
+            <span className="transaction-detail-label">Количество</span>
+            <span className="transaction-detail-value">{transaction.amount.toFixed(4)} шт.</span>
+          </div>
+          <div className="transaction-detail">
+            <span className="transaction-detail-label">Цена</span>
+            <span className="transaction-detail-value">₽{transaction.rate.toFixed(2)}</span>
+          </div>
+          <div className="transaction-detail">
+            <span className="transaction-detail-label">Сумма</span>
+            <span className="transaction-detail-value">₽{(transaction.amount * transaction.rate).toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
-    const defaultCurrencies = [
-      {
-        id: 1,
-        symbol: 'USD',
-        name: 'Доллар США',
-        image: currencyImages['USD']
-      },
-      {
-        id: 2,
-        symbol: 'EUR',
-        name: 'Евро',
-        image: currencyImages['EUR']
-      },
-      {
-        id: 3,
-        symbol: 'CNY',
-        name: 'Китайский юань',
-        image: currencyImages['CNY']
-      },
-      {
-        id: 4,
-        symbol: 'BTC',
-        name: 'Bitcoin',
-        image: currencyImages['BTC']
-      }
-    ];
-
-    const mergedCurrencies = defaultCurrencies.map(defaultCurrency => {
-      const userCurrency = caseData.userCurrencies.find(uc => uc.symbol === defaultCurrency.symbol);
-      return userCurrency ? { ...userCurrency, image: currencyImages[userCurrency.symbol] } : defaultCurrency;
-    });
-
-    setCurrencies(mergedCurrencies);
-    setTransactions(caseData.transactions || []);
-    setIsLoading(false);
-  }, [portfolioId]);
+  // Функция для смены страницы
+  const paginate = (pageNumber) => {
+    if (pageNumber >= 1 && (pageNumber === 1 || hasNextPage || pageNumber < currentPage)) {
+      setCurrentPage(pageNumber);
+    }
+  };
 
   if (isLoading) {
     return <div>Загрузка данных портфеля...</div>;
+  }
+
+  if (error) {
+    return <div>Ошибка: {error}</div>;
   }
 
   if (!portfolio) {
@@ -157,33 +353,165 @@ const PortfolioCurrencies = () => {
     <div className="portfolio-page">
       <div className="portfolio-header">
         <h1>{portfolio.name}</h1>
-        <div className="portfolio-stats">
-          <p>Общая стоимость: ${portfolio.value?.toFixed(2) || '0.00'}</p>
-          {portfolio.profit !== undefined && (
-            <p className={portfolio.profit >= 0 ? 'profit' : 'loss'}>
-              {portfolio.profit >= 0 ? 'Прибыль' : 'Убыток'}: ${Math.abs(portfolio.profit).toFixed(2)}
-            </p>
-          )}
+        <div className="alert-button-container">
+          <button className="alert-btn" onClick={() => setShowAlertModal(true)}>
+            Настроить уведомления
+          </button>
         </div>
+        {portfolioSummary && (
+          <div className="portfolio-summary">
+            <p>Стоимость портфеля: ₽{portfolioSummary.total_current_value?.toFixed(2) || '0.00'}</p>
+            <p
+              className={`portfolio-profit ${
+                portfolioSummary.total_profit_percent > 0
+                  ? 'profit'
+                  : portfolioSummary.total_profit_percent < 0
+                  ? 'loss'
+                  : 'neutral'
+              }`}
+            >
+              Прибыль портфеля: {portfolioSummary.total_profit_percent?.toFixed(2) || '0.00'}%
+            </p>
+          </div>
+        )}
       </div>
+
+      {showAlertModal && (
+        <AlertPortfolio
+          portfolioId={portfolioId}
+          onClose={() => setShowAlertModal(false)}
+        />
+      )}
 
       <div className="crypto-dashboard">
         <div className="currency-cards-container">
-          {currencies.map(currency => (
-            <CurrencyCard 
-              key={currency.id} 
-              currency={currency} 
-              onBuyClick={handleBuyClick}
-            />
-          ))}
+          {currencies.map((currency) => {
+            const actionState = actionStates[currency.id] || {};
+            const totalCost = actionState.amount
+              ? (parseFloat(actionState.amount) * currency.currentPrice).toFixed(2)
+              : '0.00';
+
+            return (
+              <div key={currency.id} className="currency-card">
+                <div className="currency-image-container">
+                  <img
+                    src={currency.image}
+                    alt={currency.name}
+                    className="currency-image"
+                    onClick={() => handleLogoClick(currency.code)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <div className="currency-info">
+                    <h3 className="currency-name">{currency.name}</h3>
+                    <p className="currency-price">Текущая цена: ₽{currency.currentPrice.toFixed(2)}</p>
+                    {currency.isPurchased ? (
+                      <>
+                        <p className="currency-amount">Количество: {currency.amount?.toFixed(4) || '0'}</p>
+                        <p className="currency-buy-price">Стоимость: ₽{currency.currentValue?.toFixed(2) || '0.00'}</p>
+                        <p
+                          className={`currency-profit ${
+                            currency.profitPercentage > 0
+                              ? 'profit'
+                              : currency.profitPercentage < 0
+                              ? 'loss'
+                              : 'neutral'
+                          }`}
+                        >
+                          {currency.profitPercentage >= 0 ? 'Прибыль' : 'Убыток'}:{' '}
+                          {currency.profitPercentage?.toFixed(2) || '0.00'}%
+                        </p>
+                      </>
+                    ) : (
+                      <p className="currency-not-purchased">Монета не приобретена</p>
+                    )}
+                  </div>
+                </div>
+                <div className="currency-actions">
+                  <button
+                    className="buy-button"
+                    onClick={() => handleActionClick(currency.id, 'buy')}
+                    disabled={actionState.isSubmitting}
+                  >
+                    Купить
+                  </button>
+                  {currency.isPurchased && (
+                    <button
+                      className="sell-button"
+                      onClick={() => handleActionClick(currency.id, 'sell')}
+                      disabled={actionState.isSubmitting}
+                    >
+                      Продать
+                    </button>
+                  )}
+                </div>
+                {actionState.action && (
+                  <div className="action-form">
+                    <div className="action-input-container">
+                      <label htmlFor={`amount-input-${currency.id}`}>Количество:</label>
+                      <input
+                        id={`amount-input-${currency.id}`}
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        value={actionState.amount || ''}
+                        onChange={(e) => handleAmountChange(currency.id, e.target.value)}
+                        placeholder="Введите количество"
+                        disabled={actionState.isSubmitting}
+                      />
+                    </div>
+                    <p className="total-cost">Стоимость: ₽{totalCost}</p>
+                    {actionState.error && <p className="error-message">{actionState.error}</p>}
+                    <button
+                      className="confirm-button"
+                      onClick={() => handleSubmit(currency, actionState.action, actionState.amount)}
+                      disabled={
+                        actionState.isSubmitting ||
+                        !actionState.amount ||
+                        parseFloat(actionState.amount) <= 0
+                      }
+                    >
+                      {actionState.isSubmitting
+                        ? 'Выполняется...'
+                        : `Подтвердить ${actionState.action === 'buy' ? 'покупку' : 'продажу'}`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="transactions-container">
-          <h2>История транзакций</h2>
+          <h2>
+            История транзакций
+            {(hasNextPage || currentPage > 1) && (
+              <div className="pagination">
+                <button
+                  onClick={() => paginate(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="pagination-button"
+                >
+                  Предыдущая
+                </button>
+                <span className="pagination-info">Страница {currentPage}</span>
+                <button
+                  onClick={() => paginate(currentPage + 1)}
+                  disabled={!hasNextPage}
+                  className="pagination-button"
+                >
+                  Следующая
+                </button>
+              </div>
+            )}
+          </h2>
           <div className="transactions-list">
-            {transactions.map(transaction => (
-              <TransactionItem key={transaction.id} transaction={transaction} />
-            ))}
+            {transactions.length > 0 ? (
+              transactions.map((transaction) => (
+                <TransactionItem key={transaction.id} transaction={transaction} />
+              ))
+            ) : (
+              <p>Транзакции отсутствуют</p>
+            )}
           </div>
         </div>
       </div>

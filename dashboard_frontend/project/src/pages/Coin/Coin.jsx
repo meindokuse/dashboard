@@ -1,51 +1,95 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import './Coin.css';
 import LineChart from '../../components/LineChart/LineChart';
 import { API_CONFIG } from '../../config/config';
 
+const STATIC_CURRENCIES = [
+  { id: 1, code: 'BTC', name: 'Bitcoin', description: 'Первая и крупнейшая криптовалюта, основанная на блокчейне.' },
+  { id: 2, code: 'SOL', name: 'Solana', description: 'Высокопроизводительный блокчейн для масштабируемых приложений.' },
+  { id: 3, code: 'ETH', name: 'Ethereum', description: 'Платформа для смарт-контрактов и децентрализованных приложений.' },
+  { id: 4, code: 'TON', name: 'Toncoin', description: 'Криптовалюта, разработанная для экосистемы Telegram.' },
+];
+
 const Coin = () => {
-  const { coinId } = useParams(); // coinId теперь равен currency.code (например, "BTC")
-  const [amount, setAmount] = useState('');
-  const [action, setAction] = useState('buy');
+  const { coinId } = useParams();
+  const navigate = useNavigate();
   const [currencyData, setCurrencyData] = useState(null);
   const [currentRate, setCurrentRate] = useState(0);
-  const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [portfolios, setPortfolios] = useState([]);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState(null);
+  const [selectedPortfolioName, setSelectedPortfolioName] = useState('Выбрать портфель');
+  const [showPortfolioMenu, setShowPortfolioMenu] = useState(false);
 
-  // Загрузка данных о валюте и балансе пользователя
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Получение информации о валюте
-        const currencyRes = await fetch(`${API_CONFIG.BASE_URL}/currencies/currencies/`);
-        const currencies = await currencyRes.json();
-        const currentCurrency = currencies.find(c => c.code === coinId);
+        setLoading(true);
+
+        // Поиск валюты
+        const currentCurrency = STATIC_CURRENCIES.find((c) => c.code === coinId);
         if (!currentCurrency) throw new Error('Валюта не найдена');
 
-        // 2. Получение последнего курса
-        const rateRes = await fetch(
-          `${API_CONFIG.BASE_URL}/rate/currencies/${coinId}/rates/?` + 
-          new URLSearchParams({
-            start_date: new Date(Date.now() - 3600 * 1000).toISOString(), // последний час
-            end_date: new Date().toISOString()
-          })
-        );
-        const rateData = await rateRes.json();
-        const latestRate = rateData.rates[0]?.rate || 0;
+        // Курс
+        const rateRes = await fetch(`${API_CONFIG.BASE_URL}/rate/last_rates`);
+        if (!rateRes.ok) throw new Error('Ошибка получения курса');
+        const lastRates = await rateRes.json();
+        const latestRate = lastRates[coinId] || 0;
 
-        // 3. Получение баланса пользователя (пример для авторизованных запросов)
-        const profileRes = await fetch(API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.PROFILE, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        const profileData = await profileRes.json();
+        // Проверка авторизации и получение портфелей
+        const sessionId = localStorage.getItem('session_id');
+        if (sessionId) {
+          const profileRes = await fetch(`${API_CONFIG.BASE_URL}/user/profile`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              'x-session-id': sessionId || '',
+            },
+            credentials: 'include',
+            body: JSON.stringify({}),
+          });
+
+          if (profileRes.status === 401) {
+            localStorage.removeItem('session_id');
+            setIsAuthenticated(false);
+            throw new Error('Не авторизован. Пожалуйста, войдите снова.');
+          }
+
+          if (!profileRes.ok) {
+            const errorData = await profileRes.json().catch(() => ({}));
+            throw new Error(errorData.message || `Ошибка HTTP! Статус: ${profileRes.status}`);
+          }
+
+          setIsAuthenticated(true);
+
+          // Получение портфелей
+          const portfoliosRes = await fetch(`${API_CONFIG.BASE_URL}/portfolio/portfolios?page=1&limit=100`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              'x-session-id': sessionId || '',
+            },
+            credentials: 'include',
+          });
+
+          if (!portfoliosRes.ok) throw new Error('Ошибка при загрузке портфелей');
+          const portfoliosData = await portfoliosRes.json();
+          const portfoliosArray = Array.isArray(portfoliosData) ? portfoliosData : [portfoliosData];
+          setPortfolios(portfoliosArray);
+        } else {
+          setIsAuthenticated(false);
+        }
 
         setCurrencyData(currentCurrency);
         setCurrentRate(latestRate);
-        setBalance(profileData.balance);
       } catch (err) {
         setError(err.message);
+        console.error('Ошибка при загрузке данных:', err);
       } finally {
         setLoading(false);
       }
@@ -54,38 +98,24 @@ const Coin = () => {
     fetchData();
   }, [coinId]);
 
-  const handleTrade = async (e) => {
-    e.preventDefault();
-    const numericAmount = parseFloat(amount);
-    
-    if (!numericAmount || numericAmount <= 0) {
-      alert('Введите корректную сумму');
+  const handlePortfolioSelect = (portfolio) => {
+    setSelectedPortfolioId(portfolio.id);
+    setSelectedPortfolioName(portfolio.name);
+    setShowPortfolioMenu(false);
+  };
+
+  const handleCreatePortfolio = () => {
+    navigate('/profile');
+  };
+
+  const handleTradeRedirect = (action) => {
+    if (!selectedPortfolioId) {
+      alert('Пожалуйста, выберите портфель');
       return;
     }
-
-    try {
-      // Отправка транзакции на бэкенд
-      const response = await fetch(API_CONFIG.BASE_URL + '/transaction/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          currency_id: currencyData.id,
-          type: action.toUpperCase(),
-          amount: numericAmount,
-          rate: currentRate,
-          portfolio_id: 1 // Пример, нужно заменить на реальный portfolio_id
-        })
-      });
-
-      if (!response.ok) throw new Error('Ошибка транзакции');
-      alert('Транзакция успешно выполнена!');
-      setAmount('');
-    } catch (err) {
-      alert(err.message);
-    }
+    navigate(`/portfolio/${selectedPortfolioId}`, {
+      state: { portfolioName: selectedPortfolioName, coinId, action },
+    });
   };
 
   if (loading) return <div className="coin-page">Загрузка...</div>;
@@ -93,64 +123,85 @@ const Coin = () => {
 
   return (
     <div className="coin-page">
-      <Link to="/" className="back-button">← Назад к списку</Link>
-      
+      <Link to="/" className="back-button">
+        ← Назад к списку
+      </Link>
+
       <div className="coin-header">
-        <h1>{currencyData.name} ({currencyData.code})</h1>
+        <h1>
+          {currencyData.name} ({currencyData.code})
+        </h1>
       </div>
 
       <div className="price-info">
-        <h2>${currentRate.toLocaleString()}</h2>
+        <h2>RUB {currentRate.toLocaleString()}</h2>
       </div>
 
-      <div className="trading-section">
-        <h3>Торговая панель</h3>
-        <div className="action-switcher">
-          <button
-            className={`trade-btn ${action === 'buy' ? 'active' : ''}`}
-            onClick={() => setAction('buy')}
-          >
-            Купить
-          </button>
-          <button
-            className={`trade-btn ${action === 'sell' ? 'active' : ''}`}
-            onClick={() => setAction('sell')}
-          >
-            Продать
-          </button>
-        </div>
-
-        <form onSubmit={handleTrade} className="trade-form">
-          <div className="balance-info">
-            Доступно: ${balance.toLocaleString()}
-          </div>
-
-          <div className="input-group">
-            <label>
-              Сумма ({action === 'buy' ? 'USD' : currencyData.code})
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                step="0.000001"
-                placeholder="0.00"
-                required
-              />
-            </label>
-          </div>
-
-          <button type="submit" className={`submit-btn ${action}`}>
-            {action === 'buy' ? 'Купить' : 'Продать'} {currencyData.code}
-          </button>
-        </form>
-      </div>
+      <LineChart />
 
       <div className="description">
         <h3>Описание</h3>
         <p>{currencyData.description}</p>
       </div>
 
-      <LineChart />
+      {isAuthenticated ? (
+        <div className="portfolio-section">
+          {portfolios.length > 0 ? (
+            <>
+              <div className="portfolio-selector">
+                <label>Портфель</label>
+                <div className="portfolio-dropdown">
+                  <button
+                    type="button"
+                    className="portfolio-btn"
+                    onClick={() => setShowPortfolioMenu(!showPortfolioMenu)}
+                  >
+                    {selectedPortfolioName}
+                    <span className="dropdown-arrow">▼</span>
+                  </button>
+                  {showPortfolioMenu && (
+                    <div className="portfolio-menu">
+                      {portfolios.map((portfolio) => (
+                        <div
+                          key={portfolio.id}
+                          className="portfolio-menu-item"
+                          onClick={() => handlePortfolioSelect(portfolio)}
+                        >
+                          {portfolio.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {selectedPortfolioId && (
+                <div className="trade-actions">
+                  <button
+                    className="trade-btn buy-sell"
+                    onClick={() => handleTradeRedirect('buy-sell')}
+                  >
+                    Купить/Продать {currencyData.code}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="no-portfolios">
+              <span onClick={handleCreatePortfolio} className="create-portfolio-link">
+                Создать портфель +
+              </span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="auth-hint">
+          <p>
+            Авторизуйтесь, чтобы купить или продать валюту.{' '}
+            <Link to="/auth">Войти</Link>
+          </p>
+        </div>
+      )}
     </div>
   );
 };

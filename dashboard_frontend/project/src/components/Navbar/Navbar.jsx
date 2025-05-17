@@ -10,8 +10,9 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    logout(); // Вызываем функцию logout из контекста
+    localStorage.clear(); // Очищаем localStorage
+    navigate('/'); // Перенаправляем на главную страницу
   };
 
   return (
