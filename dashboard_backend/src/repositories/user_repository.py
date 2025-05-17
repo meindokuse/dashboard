@@ -8,6 +8,8 @@ class UserRepository(SQLAlchemyRepository):
     model = User
 
     async def valid_employer(self, **filter_by):
+        """Валидоация по логину и паролю."""
+
         stmt = select(self.model).filter_by(**filter_by)
         res = await self.session.execute(stmt)
         res = res.scalar_one_or_none()
@@ -16,6 +18,8 @@ class UserRepository(SQLAlchemyRepository):
         return None
 
     async def update_balance(self,id:int,new_balance:float):
+        """Обновление баланса для пользователя."""
+
         stmt = (
             update(self.model)
             .values(balance=new_balance)

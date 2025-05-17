@@ -10,7 +10,8 @@ router = APIRouter(
 )
 
 @router.get("/currencies/")
-async def get_all_currencies(uow:UOWDep):
+async def get_all_currencies(uow: UOWDep):
+    """Получить список всех доступных валют"""
     currency_service = CurrencyService(uow)
     currencies = await currency_service.get_currencies()
     return currencies

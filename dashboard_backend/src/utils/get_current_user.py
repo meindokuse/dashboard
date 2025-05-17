@@ -10,9 +10,8 @@ from src.database.cache import redis_pool
 
 def get_current_user(request: Request):
 
-    redis = Redis(connection_pool=redis_pool)    # Сохраняем сессию
-
-    session_id = request.cookies.get("session_id")
+    redis = Redis(connection_pool=redis_pool)
+    session_id = request.cookies.get("session_id") or request.headers.get("x-session-id")
     if not session_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
@@ -20,7 +19,6 @@ def get_current_user(request: Request):
 
     if not session_data:
         raise HTTPException(status_code=401, detail="Session expired")
-    print(session_data)
     data = json.loads(session_data)
     if data["ip"] != request.client.host:
         redis.delete(f"session:{session_id}")

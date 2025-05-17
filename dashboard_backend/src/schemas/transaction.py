@@ -17,5 +17,6 @@ class TransactionRead(BaseModel):
     currency_id:int
     type:str
     amount:float
+    timestamp:datetime
     rate:float
     portfolio_id:int
