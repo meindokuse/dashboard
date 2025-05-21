@@ -1,6 +1,9 @@
-fastapi
+fastapi[all]
 alembic
 asyncpg
 sqlalchemy
 bcrypt
 dotenv
+celery
+redis
+aiohttp

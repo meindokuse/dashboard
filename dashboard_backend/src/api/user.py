@@ -1,10 +1,7 @@
 import json
 import uuid
-from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
-from redis.asyncio import Redis
-from sqlalchemy.testing.suite.test_reflection import users
+from fastapi import APIRouter,HTTPException
 
 from src.tasks.auth_tasks import save_session_to_redis
 
@@ -17,7 +14,7 @@ from src.utils.get_current_user import session_dep
 
 router = APIRouter(
     tags=['user'],
-    prefix='/user',
+    prefix='/api/user',
 )
 
 

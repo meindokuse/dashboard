@@ -11,7 +11,7 @@ from src.services.rate_service import RateService
 
 router = APIRouter(
     tags=['rate'],
-    prefix='/rate',
+    prefix='/api/rate',
 )
 
 class DateRange(BaseModel):

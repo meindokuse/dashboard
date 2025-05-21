@@ -16,7 +16,7 @@ from src.utils.get_current_user import session_dep
 
 router = APIRouter(
     tags=['portfolio'],
-    prefix='/portfolio',
+    prefix='/api/portfolio',
 )
 
 
