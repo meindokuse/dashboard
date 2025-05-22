@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --silent
 
-COPY . .
+COPY project/ .
 RUN npm run build
 
 FROM node:16-slim

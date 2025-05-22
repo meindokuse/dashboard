@@ -87,3 +87,5 @@ def update_currency_rates():
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(async_save_rates())
+
+print(datetime.now())
