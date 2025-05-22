@@ -1,10 +1,11 @@
+
 # Интерактивный дашборд для анализа рынка в реальном времени (Bitcoin, Мосбиржа и т.д.)
 
 ## Участники проекта
 - **Самофалов Роман** — Teamlead, Fullstack
 - **Храмов Никита** — Frontend
 - **Назаров Егор** — Frontend
-- **Антошкин Лука** — Frontend
+- **Антошкин Лука** 
 
 ## Описание проекта
 
@@ -66,4 +67,41 @@
 1. **Клонирование репозитория**:
    ```bash
    git clone https://github.com/meindokuse/dashboard.git
-   cd dashboard
+   cd project-directory
+   ```
+
+2. **Установка зависимостей**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+   
+3. **Настройка переменных окружения**:
+   ```bash
+   cp .env.example .env
+   ```
+   - Отредактируйте .env файл, указав свои настройки (секретные ключи, данные для БД и т.д.).
+
+
+4. **Настройка базы данных**:
+
+   - Впишите доверенные IP для подключения к БД, в pg.conf файле.
+
+   
+5. **Запуск приложения**:
+   ```bash
+   docker-compose up -d --build
+   ```
+## Задачи и результаты
+
+## Технологии
+- Backend: Python (FastAPI)
+- Frontend: React.js
+- База данных: PostgreSQL, Redis
+- Парсинг данных: Beautiful Soup, Scrapy
+- Уведомления: Telegram Bot API, SMTP
+- Фоновая работа: Celery, Celery Beat
+- Деплой: Docker, Nginx
+
+
+
+
