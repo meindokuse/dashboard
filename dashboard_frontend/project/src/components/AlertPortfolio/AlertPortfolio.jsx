@@ -201,18 +201,26 @@ const AlertPortfolio = ({ portfolioId, onClose }) => {
               <label>
                 Канал уведомлений
                 <div className="switch-container">
-                  <span className={alertForm.notification_channel === 'email' ? 'active' : ''}>Email</span>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={alertForm.notification_channel === 'telegram'}
-                      onChange={(e) =>
-                        handleAlertFormChange('notification_channel', e.target.checked ? 'telegram' : 'email')
-                      }
-                    />
-                    <span className="slider"></span>
-                  </label>
-                  <span className={alertForm.notification_channel === 'telegram' ? 'active' : ''}>Telegram</span>
+                  <div className="notification-option">
+                    <span className={`notification-label ${alertForm.notification_channel === 'email' ? 'active' : ''}`}>
+                      Email
+                    </span>
+                    <button
+                      type="button"
+                      className={`notification-dot ${alertForm.notification_channel === 'email' ? 'active' : ''}`}
+                      onClick={() => handleAlertFormChange('notification_channel', 'email')}
+                    ></button>
+                  </div>
+                  <div className="notification-option">
+                    <span className={`notification-label ${alertForm.notification_channel === 'telegram' ? 'active' : ''}`}>
+                      Telegram
+                    </span>
+                    <button
+                      type="button"
+                      className={`notification-dot ${alertForm.notification_channel === 'telegram' ? 'active' : ''}`}
+                      onClick={() => handleAlertFormChange('notification_channel', 'telegram')}
+                    ></button>
+                  </div>
                 </div>
               </label>
               <label>

@@ -200,19 +200,9 @@
 .switch-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
   margin: 10px 0;
   justify-content: center;
-}
-
-.switch-container span {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.95rem;
-}
-
-.switch-container span.active {
-  color: white;
-  font-weight: 500;
 }
 
 .switch {
@@ -260,6 +250,41 @@ input:checked + .slider:before {
   transform: translateX(26px);
 }
 
+.notification-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.notification-dot.active {
+  background: rgba(76, 175, 80, 0.6);
+  border-color: rgba(76, 175, 80, 0.8);
+}
+
+.notification-dot:hover {
+  background: rgba(76, 175, 80, 0.3);
+}
+
+.notification-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+}
+
+.notification-label.active {
+  color: white;
+  font-weight: 500;
+}
+
 .telegram-link {
   display: block;
   text-align: center;
@@ -277,7 +302,6 @@ input:checked + .slider:before {
   background: #0077b3;
 }
 
-/* Стили остаются без изменений, добавлю только необходимые новые стили */
 .alert-settings-container {
   margin-bottom: 20px;
 }

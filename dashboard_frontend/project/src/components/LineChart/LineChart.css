@@ -5,16 +5,18 @@
     padding: 24px;
     margin: 20px 0;
     transition: all 0.3s ease;
-    }
-    
-    .controls {
+    position: relative;
+}
+
+.controls {
     display: flex;
     gap: 20px;
     margin-bottom: 32px;
     flex-wrap: wrap;
-    }
-    
-    select {
+    align-items: center;
+}
+
+select, input {
     background-color: #f8f9fa;
     border: 2px solid #e9ecef;
     border-radius: 8px;
@@ -25,49 +27,39 @@
     cursor: pointer;
     transition: all 0.2s ease;
     min-width: 160px;
-    }
-    
-    select:hover {
+}
+
+select:hover, input:hover {
     border-color: #adb5bd;
     background-color: #ffffff;
-    }
-    
-    select:focus {
+}
+
+select:focus, input:focus {
     outline: none;
     border-color: #4dabf7;
     box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.2);
-    }
-    
+}
 
-    @media (max-width: 768px) {
+.loading, .error {
+    text-align: center;
+    font-size: 16px;
+    color: #333;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
     .chart-container {
-    padding: 16px;
-    margin: 12px 0;
+        padding: 16px;
+        margin: 12px 0;
     }
-    
+
     .controls {
-    gap: 12px;
-    margin-bottom: 24px;
+        gap: 12px;
+        margin-bottom: 24px;
     }
-    
-    select {
-    width: 100%;
-    min-width: auto;
-    }
-    }
-    
 
-    svg text {
-    font-family: 'Segoe UI', sans-serif !important;
+    select, input {
+        width: 100%;
+        min-width: auto;
     }
-    
-
-    rect[fill="#3366cc"],
-    rect[fill="#dc3912"],
-    rect[fill="#ff9900"],
-    rect[fill="#000000"],
-    rect[fill="#E69F00"],
-    rect[fill="#56B4E9"] {
-    right: 4px;
-    left: 4px;
-    }
+}
