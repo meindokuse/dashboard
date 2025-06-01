@@ -1,19 +1,18 @@
-FROM node:16 as builder
+FROM node:18
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci --silent
+# 1. Копируем ТОЛЬКО package.json сначала (для кэширования)
+COPY project/package.json project/package-lock.json ./
+RUN npm ci
 
-COPY . .
+# 2. Копируем ВЕСЬ остальной проект
+COPY project .
+
+# 3. Собираем проект (создаст папку dist)
 RUN npm run build
-
-FROM node:16-slim
-
-WORKDIR /app
 
 RUN npm install -g serve
 
-COPY --from=builder /app/build .
-
-CMD ["serve", "-s", ".", "-l", "5173"]
+# 5. Запускаем сервер из папки dist
+CMD ["serve", "-s", "dist", "-l", "5173"]

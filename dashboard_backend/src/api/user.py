@@ -14,7 +14,7 @@ from src.utils.get_current_user import session_dep
 
 router = APIRouter(
     tags=['user'],
-    prefix='/api/user',
+    prefix='/user',
 )
 
 

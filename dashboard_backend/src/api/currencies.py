@@ -6,7 +6,7 @@ from src.services.currency_service import CurrencyService
 
 router = APIRouter(
     tags=['currencies'],
-    prefix='/api/currencies',
+    prefix='/currencies',
 )
 
 @router.get("/currencies/")

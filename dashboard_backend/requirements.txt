@@ -7,3 +7,5 @@ dotenv
 celery
 redis
 aiohttp
+gunicorn
+fastapi-mail

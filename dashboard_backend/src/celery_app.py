@@ -32,7 +32,7 @@ celery_app.conf.beat_schedule = {
     },
     "send_currency_alerts": {
         "task": "src.tasks.currency_alert_tasks.send_hourly_currency_alerts",
-        "schedule": crontab(hour="*", minute="0"),
+        "schedule": crontab(hour="*", minute=1),
     },
 
 }

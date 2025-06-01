@@ -5,7 +5,7 @@ from src.services.transaction_repository import TransactionService
 
 router = APIRouter(
     tags=['transaction'],
-    prefix='/api/transaction',
+    prefix='/transaction',
 )
 
 

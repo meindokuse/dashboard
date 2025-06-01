@@ -147,7 +147,7 @@ async def start_aiohttp_server():
     app.router.add_post('/send_message', handle_message)
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, 'localhost', 8000)
+    site = web.TCPSite(runner, '0.0.0.0', 8000)
     await site.start()
     logger.info("Aiohttp server started at http://localhost:8000")
 

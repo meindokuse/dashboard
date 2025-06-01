@@ -166,8 +166,8 @@ class PortfolioAlertService:
 
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                    "http://localhost:8000/send_message",
-                    headers={"X-Webhook-Secret": os.getenv("WEBHOOK_SECRET")},
+                    "http://bot:8000/send_message",
+                    headers={"X-Webhook-Secret": os.getenv("WEBHOOK_SECRET"),"User-Agent": "curl/7.88.1"},
                     json={
                         "unique_id": unique_id,
                         "text": message_text

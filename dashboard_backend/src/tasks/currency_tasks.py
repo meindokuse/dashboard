@@ -26,6 +26,7 @@ def update_currency_rates():
         return
 
     async def process_rates(rates: dict, source: str):
+        # Сохраняем курсы валют
         for symbol, rate in rates.items():
             async with UnitOfWork() as uow:
                 currency_service = CurrencyService(uow)
@@ -35,10 +36,11 @@ def update_currency_rates():
                     if not currency:
                         logger.warning(f"Currency {symbol} not found, skipping...")
                         continue
+                        
                     await rate_service.add_rate_for_celery(ExchangeRateCreate(
                         currency_id=currency.id,
                         rate=rate,
-                        timestamp=datetime.now(),
+                        timestamp=datetime.now() ,
                         source=source
                     ))
                     await uow.commit()
@@ -46,44 +48,52 @@ def update_currency_rates():
                     logger.error(f"Failed to save {source} rate for {symbol}: {e}")
                     await uow.rollback()
 
-            async with UnitOfWork() as uow:
-                alert_service = PortfolioAlertService(uow)
-                portfolio_service = PortfolioService(uow)
-                user_service = UserService(uow)
+        # Обрабатываем алерты (вынесено в отдельный блок)
+        async with UnitOfWork() as uow:
+            alert_service = PortfolioAlertService(uow)
+            portfolio_service = PortfolioService(uow)
+            user_service = UserService(uow)
 
-                active_alerts = await alert_service.get_active_alerts()
+            active_alerts = await alert_service.get_active_alerts()
 
-                for alert in active_alerts:
-                    try:
-                        portfolio_stats = await portfolio_service.calculate_portfolio_summary(alert.portfolio_id)
-                        total_profit_percent = float(portfolio_stats['summary']['total_profit_percent'])
-                        current_value = portfolio_stats['summary']['total_current_value']
+            for alert in active_alerts:
+                try:
+                    portfolio_stats = await portfolio_service.calculate_portfolio_summary(alert.portfolio_id)
+                    total_profit_percent = float(portfolio_stats['summary']['total_profit_percent'])
+                    current_value = portfolio_stats['summary']['total_current_value']
 
-                        if abs(total_profit_percent) >= abs(float(alert.threshold)):
-                            user = await user_service.get_user_by_id(alert.user_id)
+                    if abs(total_profit_percent) >= abs(float(alert.threshold)):
+                        user = await user_service.get_user_by_id(alert.user_id)
 
-                            if alert.notification_channel == "email":
-                                await alert_service.send_portfolio_email_alert(
-                                    email=user.email,
-                                    alert=alert,
-                                    current_value=current_value,
-                                    profit_percent=total_profit_percent
-                                )
-                            elif alert.notification_channel == "telegram":
-                                await alert_service.send_portfolio_tg_alert(
-                                    unique_id=user.telegram_id,
-                                    alert=alert,
-                                    current_value=current_value,
-                                    profit_percent=total_profit_percent
-                                )
+                        if alert.notification_channel == "email":
+                            await alert_service.send_portfolio_email_alert(
+                                email=user.email,
+                                alert=alert,
+                                current_value=current_value,
+                                profit_percent=total_profit_percent
+                            )
+                        elif alert.notification_channel == "telegram":
+                            await alert_service.send_portfolio_tg_alert(
+                                unique_id=user.unique_id,
+                                alert=alert,
+                                current_value=current_value,
+                                profit_percent=total_profit_percent
+                            )
 
-                            logger.info(f"Alert sent to user {alert.user_id} via {alert.notification_channel}")
+                        logger.info(f"Alert sent to user {alert.user_id} via {alert.notification_channel}")
 
-                    except Exception as e:
-                        logger.error(f"Error processing alert {alert.id}: {e}")
+                except Exception as e:
+                    logger.error(f"Error processing alert {alert.id}: {e}")
 
-    async def async_save_rates():
-        await process_rates(binance_rates, "binance")
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(async_save_rates())
+    # Запуск асинхронного кода (с защитой от закрытого event loop)
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        loop.run_until_complete(process_rates(binance_rates, "binance"))
+    except RuntimeError as e:
+        logger.error(f"Error in event loop: {e}")
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(process_rates(binance_rates, "binance"))

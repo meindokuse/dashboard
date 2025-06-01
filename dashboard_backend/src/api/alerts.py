@@ -9,7 +9,7 @@ from src.utils.get_current_user import session_dep
 
 router = APIRouter(
     tags=['alert'],
-    prefix='/api/alert',
+    prefix='/alert',
 )
 
 

@@ -7,16 +7,18 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: dashboard
+      TZ: Europe/Moscow
+    command: ["postgres", "-c", "timezone=Europe/Moscow"]
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     restart: unless-stopped
 
   redis:
     image: redis:6
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     restart: unless-stopped
 
   backend:
@@ -32,7 +34,7 @@ services:
 
   celery_worker:
     build: ./dashboard_backend
-    command: celery -A src.celery_app.celery_app worker --loglevel=info
+    command: celery -A src.celery_app.celery_app worker --pool=solo --loglevel=info
     env_file:
       - ./dashboard_backend/.env
     depends_on:
@@ -50,12 +52,14 @@ services:
       - backend
       - postgres
       - redis
+    volumes:
+      - celery_beat_data:/app
     restart: unless-stopped
 
   bot:
     build: ./alert_bot
-    expose:
-      - "8000"
+    ports:
+      - "8000:8000"
     env_file:
       - ./alert_bot/.env
     depends_on:
@@ -68,7 +72,6 @@ services:
     build: ./dashboard_frontend
     expose:
       - "5173"
-    command: npm run dev -- --host 0.0.0.0 --port 5173
     restart: unless-stopped
 
   nginx:
@@ -85,3 +88,4 @@ services:
 
 volumes:
   postgres_data:
+  celery_beat_data:
