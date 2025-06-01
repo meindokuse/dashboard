@@ -234,16 +234,26 @@ const Notifications = ({ user, onUpdate }) => {
               <label>
                 Канал уведомлений
                 <div className="switch-container">
-                  <span className={notificationChannel === 'email' ? 'active' : ''}>Email</span>
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={notificationChannel === 'telegram'}
-                      onChange={(e) => setNotificationChannel(e.target.checked ? 'telegram' : 'email')}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                  <span className={notificationChannel === 'telegram' ? 'active' : ''}>Telegram</span>
+                  <div className="notification-option">
+                    <span className={`notification-label ${notificationChannel === 'email' ? 'active' : ''}`}>
+                      Email
+                    </span>
+                    <button
+                      type="button"
+                      className={`notification-dot ${notificationChannel === 'email' ? 'active' : ''}`}
+                      onClick={() => setNotificationChannel('email')}
+                    ></button>
+                  </div>
+                  <div className="notification-option">
+                    <span className={`notification-label ${notificationChannel === 'telegram' ? 'active' : ''}`}>
+                      Telegram
+                    </span>
+                    <button
+                      type="button"
+                      className={`notification-dot ${notificationChannel === 'telegram' ? 'active' : ''}`}
+                      onClick={() => setNotificationChannel('telegram')}
+                    ></button>
+                  </div>
                 </div>
               </label>
               <label>

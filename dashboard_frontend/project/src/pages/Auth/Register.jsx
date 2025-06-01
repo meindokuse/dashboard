@@ -5,11 +5,19 @@ import { useAuth } from "../../context/AuthContext";
 export const Register = ({ onFormSwitch }) => {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState(''); // Новое состояние для подтверждения пароля
   const [name, setName] = useState('');
   const { register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Проверка совпадения паролей
+    if (pass !== confirmPass) {
+      alert('Пароли не совпадают. Пожалуйста, проверьте введенные данные.');
+      return;
+    }
+
     try {
       const response = await fetch(
         API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.REGISTER,
@@ -32,7 +40,7 @@ export const Register = ({ onFormSwitch }) => {
       }
 
       const userData = await response.json();
-      register(userData); // Передаем данные пользователя в контекст
+      register(userData);
       onFormSwitch('login');
       alert('Регистрация успешна!');
 
@@ -77,6 +85,18 @@ export const Register = ({ onFormSwitch }) => {
           minLength="6"
           placeholder="********"
           id="password"
+          autoComplete="new-password"
+        />
+
+        <label htmlFor="confirm-password">Подтвердите пароль</label>
+        <input
+          value={confirmPass}
+          onChange={(e) => setConfirmPass(e.target.value)}
+          type="password"
+          required
+          minLength="6"
+          placeholder="********"
+          id="confirm-password"
           autoComplete="new-password"
         />
 
